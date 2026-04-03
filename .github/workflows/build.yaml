@@ -1,0 +1,63 @@
+name: Build and push sandbox images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/tektona-ai
+
+jobs:
+  build-base:
+    runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push base image
+        uses: docker/build-push-action@v6
+        with:
+          context: sandbox-base
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+            ${{ env.REGISTRY }}/sandbox-base:latest
+          cache-from: type=gha,scope=sandbox-base
+          cache-to: type=gha,mode=max,scope=sandbox-base
+
+  build-desktop-x11:
+    runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
+    needs: build-base
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push desktop-x11 image
+        uses: docker/build-push-action@v6
+        with:
+          context: desktop-x11
+          build-args: |
+            SANDBOXD_BASE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
+            ${{ env.REGISTRY }}/desktop-x11:latest
+          cache-from: type=gha,scope=desktop-x11
+          cache-to: type=gha,mode=max,scope=desktop-x11

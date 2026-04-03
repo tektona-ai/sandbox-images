@@ -1,0 +1,99 @@
+FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
+
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# System packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    bzip2 \
+    ca-certificates \
+    cmake \
+    curl \
+    dnsutils \
+    e2fsprogs \
+    file \
+    git \
+    git-lfs \
+    gnupg2 \
+    htop \
+    iproute2 \
+    iputils-ping \
+    jq \
+    less \
+    lsof \
+    nano \
+    net-tools \
+    openssh-client \
+    p7zip-full \
+    patch \
+    pkg-config \
+    python3 \
+    python3-pip \
+    rsync \
+    shellcheck \
+    strace \
+    sudo \
+    tree \
+    unzip \
+    wget \
+    xz-utils \
+    zstd \
+    && rm -rf /var/lib/apt/lists/*
+
+# User setup — sandbox processes run as root inside the runtime, but
+# /home/tektona is the user-facing home directory.
+RUN useradd -m -s /bin/bash tektona \
+    && echo "tektona ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tektona
+
+# Node.js 22 LTS (pinned binary with integrity check)
+ARG NODE_VERSION=22.14.0
+ARG NODE_SHA256=69b09dba5c8dcb05c4e4273a4340db1005abeafe3927efda2bc5b249e80437ec
+RUN curl -fsSL -o /tmp/node.tar.xz \
+    "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" && \
+    echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c - && \
+    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 && \
+    rm /tmp/node.tar.xz
+
+# code-server (pinned .deb with integrity check)
+ARG CODE_SERVER_VERSION=4.111.0
+ARG CODE_SERVER_SHA256=37706441a7eaf044479ee5cb710e72dc70105dfd226bab6513fa315f8a8f4e49
+RUN curl -fsSL -o /tmp/code-server.deb \
+    "https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server_${CODE_SERVER_VERSION}_amd64.deb" && \
+    echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
+    dpkg -i /tmp/code-server.deb && \
+    rm /tmp/code-server.deb
+
+# JetBrains Toolbox (pinned with integrity check)
+ARG JETBRAINS_TOOLBOX_VERSION=3.3.1.75249
+ARG JETBRAINS_TOOLBOX_SHA256=49f281161adcf4224a768e95a3e9ef5cb8fb01aefe4762443e1ae2b2539745a1
+RUN curl -fsSL -o /tmp/jetbrains-toolbox.tar.gz \
+    "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JETBRAINS_TOOLBOX_VERSION}.tar.gz" && \
+    echo "${JETBRAINS_TOOLBOX_SHA256}  /tmp/jetbrains-toolbox.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/jetbrains-toolbox.tar.gz -C /opt && \
+    mv /opt/jetbrains-toolbox-* /opt/jetbrains-toolbox && \
+    ln -s /opt/jetbrains-toolbox/bin/jetbrains-toolbox /usr/local/bin/jetbrains-toolbox && \
+    rm /tmp/jetbrains-toolbox.tar.gz
+
+# AI coding CLIs (claude-code, codex, opencode) — locked via package.json
+COPY package.json package-lock.json /tmp/ai-tools/
+RUN cd /tmp/ai-tools && npm install --global-style && \
+    ln -s /tmp/ai-tools/node_modules/.bin/claude /usr/local/bin/claude && \
+    ln -s /tmp/ai-tools/node_modules/.bin/codex /usr/local/bin/codex && \
+    ln -s /tmp/ai-tools/node_modules/.bin/opencode /usr/local/bin/opencode
+
+# yq (pinned binary with integrity check)
+ARG YQ_VERSION=4.52.4
+ARG YQ_SHA256=0c4d965ea944b64b8fddaf7f27779ee3034e5693263786506ccd1c120f184e8c
+RUN curl -fsSL -o /tmp/yq \
+    "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" && \
+    echo "${YQ_SHA256}  /tmp/yq" | sha256sum -c - && \
+    install -m 755 /tmp/yq /usr/local/bin/yq && \
+    rm /tmp/yq
+
+
+USER root
+WORKDIR /home/tektona
+
+# Default entrypoint — replaced by daemon at runtime
+ENTRYPOINT ["sleep", "infinity"]

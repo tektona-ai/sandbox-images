@@ -1,0 +1,9 @@
+version: '3'
+
+tasks:
+  update-deps:
+    desc: Update AI CLI tools (claude-code, codex, opencode) and regenerate lockfile
+    dir: sandbox-base
+    cmds:
+      - npm update
+      - npm install --package-lock-only
