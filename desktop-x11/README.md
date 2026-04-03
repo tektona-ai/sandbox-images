@@ -39,5 +39,5 @@ X11 desktop environment for Tektona sandbox VMs. Provides a graphical desktop fo
 ## Building
 
 ```sh
-docker build --build-arg SANDBOXD_BASE=<base-image> -t desktop-x11 desktop-x11/
+docker build --build-arg BASE_IMAGE=sandbox-base -t desktop-x11 desktop-x11/
 ```

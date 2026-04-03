@@ -22,7 +22,7 @@ desktop-x11/           X11 desktop layer (extends sandbox-base)
   └── README.md        Architecture docs, package inventory
 ```
 
-`desktop-x11` builds on top of `sandbox-base` via the `SANDBOXD_BASE` build arg.
+`desktop-x11` builds on top of `sandbox-base` via the `BASE_IMAGE` build arg.
 
 ## Updating AI CLI tools
 
@@ -39,7 +39,7 @@ This updates `@anthropic-ai/claude-code`, `@openai/codex`, and `opencode-ai` to 
 docker build -t sandbox-base sandbox-base/
 
 # Desktop image (requires base)
-docker build --build-arg SANDBOXD_BASE=sandbox-base -t desktop-x11 desktop-x11/
+docker build --build-arg BASE_IMAGE=sandbox-base -t desktop-x11 desktop-x11/
 ```
 
 ## License

@@ -54,7 +54,7 @@ jobs:
         with:
           context: desktop-x11
           build-args: |
-            SANDBOXD_BASE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+            BASE_IMAGE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
