@@ -67,7 +67,7 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
 # Chrome desktop entry with flags to skip first-run setup
-RUN sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/bin/google-chrome-stable --no-sandbox --no-first-run --no-default-browser-check --disable-sync --disable-gpu-sandbox --disable-features=TranslateUI|' \
+RUN sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/bin/google-chrome-stable --no-sandbox --no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI|' \
     /usr/share/applications/google-chrome.desktop
 
 # Configure DMZ-Black cursor (high visibility for AI computer-use)
@@ -78,14 +78,22 @@ RUN mkdir -p /usr/share/icons/default && \
 # Stored in /etc/skel/ because /home/tektona is initialized dynamically at runtime.
 # The daemon copies these to $HOME on first start.
 RUN mkdir -p /etc/skel/.config/plank/dock1/launchers && \
-    printf '[PlankDockPreferences]\nHideMode=0\nTheme=Transparent\nPosition=3\nIconSize=48\nDockItems=google-chrome.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem\n' \
+    printf '[PlankDockPreferences]\nHideMode=0\nTheme=Transparent\nPosition=3\nIconSize=48\nDockItems=google-chrome.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem;mousepad.dockitem;gedit.dockitem;galculator.dockitem;libreoffice-writer.dockitem\n' \
     > /etc/skel/.config/plank/dock1/settings && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/google-chrome.desktop\n' \
     > /etc/skel/.config/plank/dock1/launchers/google-chrome.dockitem && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/xfce4-terminal.desktop\n' \
     > /etc/skel/.config/plank/dock1/launchers/xfce4-terminal.dockitem && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/pcmanfm.desktop\n' \
-    > /etc/skel/.config/plank/dock1/launchers/pcmanfm.dockitem
+    > /etc/skel/.config/plank/dock1/launchers/pcmanfm.dockitem && \
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/mousepad.desktop\n' \
+    > /etc/skel/.config/plank/dock1/launchers/mousepad.dockitem && \
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/org.gnome.gedit.desktop\n' \
+    > /etc/skel/.config/plank/dock1/launchers/gedit.dockitem && \
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/galculator.desktop\n' \
+    > /etc/skel/.config/plank/dock1/launchers/galculator.dockitem && \
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/libreoffice-writer.desktop\n' \
+    > /etc/skel/.config/plank/dock1/launchers/libreoffice-writer.dockitem
 
 # Plank dconf system defaults (bounce animation on launch, dock always visible)
 RUN mkdir -p /etc/dconf/profile /etc/dconf/db/local.d && \
