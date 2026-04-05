@@ -67,7 +67,7 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
 # Chrome desktop entry with flags to skip first-run setup
-RUN sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/bin/google-chrome-stable --no-sandbox --no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI|' \
+RUN sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/bin/google-chrome-stable --no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI|' \
     /usr/share/applications/google-chrome.desktop
 
 # Configure DMZ-Black cursor (high visibility for AI computer-use)
@@ -78,7 +78,7 @@ RUN mkdir -p /usr/share/icons/default && \
 # Stored in /etc/skel/ because /home/tektona is initialized dynamically at runtime.
 # The daemon copies these to $HOME on first start.
 RUN mkdir -p /etc/skel/.config/plank/dock1/launchers && \
-    printf '[PlankDockPreferences]\nHideMode=0\nTheme=Transparent\nPosition=3\nIconSize=48\nDockItems=google-chrome.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem;mousepad.dockitem;gedit.dockitem;galculator.dockitem;libreoffice-writer.dockitem\n' \
+    printf '[PlankDockPreferences]\nHideMode=0\nTheme=Transparent\nPosition=3\nIconSize=48\nDockItems=google-chrome.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem;mousepad.dockitem;gedit.dockitem;galculator.dockitem;libreoffice-writer.dockitem;libreoffice-calc.dockitem\n' \
     > /etc/skel/.config/plank/dock1/settings && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/google-chrome.desktop\n' \
     > /etc/skel/.config/plank/dock1/launchers/google-chrome.dockitem && \
@@ -93,7 +93,9 @@ RUN mkdir -p /etc/skel/.config/plank/dock1/launchers && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/galculator.desktop\n' \
     > /etc/skel/.config/plank/dock1/launchers/galculator.dockitem && \
     printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/libreoffice-writer.desktop\n' \
-    > /etc/skel/.config/plank/dock1/launchers/libreoffice-writer.dockitem
+    > /etc/skel/.config/plank/dock1/launchers/libreoffice-writer.dockitem && \
+    printf '[PlankDockItemPreferences]\nLauncher=file:///usr/share/applications/libreoffice-calc.desktop\n' \
+    > /etc/skel/.config/plank/dock1/launchers/libreoffice-calc.dockitem
 
 # Plank dconf system defaults (bounce animation on launch, dock always visible)
 RUN mkdir -p /etc/dconf/profile /etc/dconf/db/local.d && \
@@ -102,9 +104,109 @@ RUN mkdir -p /etc/dconf/profile /etc/dconf/db/local.d && \
     > /etc/dconf/db/local.d/01-plank && \
     dconf update 2>/dev/null || true
 
+# Openbox menu (no "Restart" entry)
+RUN mkdir -p /etc/skel/.config/openbox && \
+    cat > /etc/skel/.config/openbox/menu.xml << 'MENU'
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+  <menu id="root-menu" label="Desktop">
+    <item label="Terminal"><action name="Execute"><execute>xfce4-terminal</execute></action></item>
+    <item label="File Manager"><action name="Execute"><execute>pcmanfm</execute></action></item>
+    <item label="Chrome"><action name="Execute"><execute>google-chrome-stable</execute></action></item>
+    <separator />
+    <item label="Reconfigure"><action name="Reconfigure" /></item>
+  </menu>
+</openbox_menu>
+MENU
+
+# Openbox Nightmare theme + config
+RUN mkdir -p /usr/share/themes/Nightmare/openbox-3 && \
+    cat > /usr/share/themes/Nightmare/openbox-3/themerc << 'THEME'
+window.active.border.color: #333333
+window.inactive.border.color: #222222
+window.active.title.bg: flat solid
+window.active.title.bg.color: #1a1a1a
+window.active.label.bg: parentrelative
+window.active.label.text.color: #e0e0e0
+window.active.label.text.font: shadow=y:shadowoffset=1:shadowtint=70
+window.active.handle.bg: flat solid
+window.active.handle.bg.color: #1a1a1a
+window.active.grip.bg: flat solid
+window.active.grip.bg.color: #333333
+window.active.button.unpressed.bg: flat solid
+window.active.button.unpressed.bg.color: #1a1a1a
+window.active.button.unpressed.image.color: #aaaaaa
+window.active.button.pressed.bg: flat solid
+window.active.button.pressed.bg.color: #333333
+window.active.button.pressed.image.color: #ffffff
+window.active.button.hover.bg: flat solid
+window.active.button.hover.bg.color: #333333
+window.active.button.hover.image.color: #ffffff
+window.active.button.disabled.bg: flat solid
+window.active.button.disabled.bg.color: #1a1a1a
+window.active.button.disabled.image.color: #555555
+window.inactive.title.bg: flat solid
+window.inactive.title.bg.color: #0f0f0f
+window.inactive.label.bg: parentrelative
+window.inactive.label.text.color: #666666
+window.inactive.handle.bg: flat solid
+window.inactive.handle.bg.color: #0f0f0f
+window.inactive.grip.bg: flat solid
+window.inactive.grip.bg.color: #222222
+window.inactive.button.unpressed.bg: flat solid
+window.inactive.button.unpressed.bg.color: #0f0f0f
+window.inactive.button.unpressed.image.color: #555555
+window.inactive.button.pressed.bg: flat solid
+window.inactive.button.pressed.bg.color: #222222
+window.inactive.button.pressed.image.color: #aaaaaa
+window.inactive.button.hover.bg: flat solid
+window.inactive.button.hover.bg.color: #222222
+window.inactive.button.hover.image.color: #aaaaaa
+menu.title.bg: flat solid
+menu.title.bg.color: #1a1a1a
+menu.title.text.color: #e0e0e0
+menu.items.bg: flat solid
+menu.items.bg.color: #111111
+menu.items.text.color: #cccccc
+menu.items.active.bg: flat solid
+menu.items.active.bg.color: #333333
+menu.items.active.text.color: #ffffff
+menu.items.disabled.text.color: #555555
+menu.separator.color: #333333
+border.width: 1
+padding.width: 4
+padding.height: 4
+window.handle.width: 2
+menu.separator.width: 1
+menu.separator.padding.width: 6
+menu.separator.padding.height: 3
+THEME
+
+# Openbox rc.xml: use Nightmare theme
+RUN cat > /etc/skel/.config/openbox/rc.xml << 'RCXML'
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <theme>
+    <name>Nightmare</name>
+    <titleLayout>NLIMC</titleLayout>
+    <keepBorder>yes</keepBorder>
+    <animateIconify>yes</animateIconify>
+    <font place="ActiveWindow"><name>sans</name><size>10</size><weight>Bold</weight></font>
+    <font place="InactiveWindow"><name>sans</name><size>10</size><weight>Bold</weight></font>
+    <font place="MenuHeader"><name>sans</name><size>10</size><weight>Bold</weight></font>
+    <font place="MenuItem"><name>sans</name><size>10</size><weight>Normal</weight></font>
+  </theme>
+  <desktops><number>1</number></desktops>
+  <resize><drawContents>yes</drawContents></resize>
+  <focus><followMouse>no</followMouse></focus>
+  <placement><policy>Smart</policy></placement>
+  <menu><file>menu.xml</file></menu>
+</openbox_config>
+RCXML
+
 # PCManFM desktop wallpaper configuration
 RUN mkdir -p /etc/skel/.config/pcmanfm/default && \
-    printf '[*]\nwallpaper_mode=stretch\nwallpaper=/usr/share/backgrounds/tektona-desktop.png\ndesktop_bg=#1a1a2e\nshow_documents=0\nshow_trash=0\nshow_mounts=0\n' \
+    printf '[*]\nwallpaper_mode=stretch\nwallpaper=/usr/share/backgrounds/tektona-desktop.png\ndesktop_bg=#1a1a2e\nshow_documents=1\nshow_trash=0\nshow_mounts=0\n' \
     > /etc/skel/.config/pcmanfm/default/desktop-items-0.conf
 
 USER root
