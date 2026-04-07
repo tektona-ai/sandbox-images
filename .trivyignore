@@ -23,3 +23,8 @@ CVE-2026-23950  # tar: file overwrite (bundled in code-server)
 CVE-2026-24842  # tar: file creation (bundled in code-server)
 CVE-2026-26960  # tar: file read/write (bundled in code-server)
 CVE-2026-29786  # tar: hardlink path traversal (bundled in code-server)
+CVE-2026-31802  # tar: file overwrite via symlink (bundled in code-server)
+
+# Go stdlib (bundled in compiled Go binaries — yq, etc.)
+CVE-2026-25679  # net/url: incorrect IPv6 host parsing
+CVE-2026-27137  # crypto/x509: email constraint enforcement
