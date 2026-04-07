@@ -30,11 +30,33 @@ jobs:
         with:
           context: sandbox-base
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
             ${{ env.REGISTRY }}/sandbox-base:latest
           cache-from: type=gha,scope=sandbox-base
           cache-to: type=gha,mode=max,scope=sandbox-base
+
+      - name: Trivy vulnerability scan (base)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+
+      - name: Generate SBOM (base)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+          scan-type: image
+          format: cyclonedx
+          output: sandbox-base-sbom.cdx.json
+
+      - name: Upload SBOM (base)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-base-sbom
+          path: sandbox-base-sbom.cdx.json
 
   build-desktop-x11:
     runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
@@ -56,8 +78,30 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: |
             ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
             ${{ env.REGISTRY }}/desktop-x11:latest
           cache-from: type=gha,scope=desktop-x11
           cache-to: type=gha,mode=max,scope=desktop-x11
+
+      - name: Trivy vulnerability scan (desktop-x11)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+
+      - name: Generate SBOM (desktop-x11)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
+          scan-type: image
+          format: cyclonedx
+          output: desktop-x11-sbom.cdx.json
+
+      - name: Upload SBOM (desktop-x11)
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-x11-sbom
+          path: desktop-x11-sbom.cdx.json
