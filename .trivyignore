@@ -2,8 +2,24 @@
 CVE-2026-33870  # netty-codec-http: request smuggling (bundled in toolbox.jar)
 CVE-2022-41404  # ini4j: DoS (bundled in ini4j-0.5.4.jar)
 
-# code-server false positive — CVE applies to <4.10.1 but Trivy misreads
-# the internal package version (1.111.0) vs the actual release (4.x)
-CVE-2023-26114
-CVE-2021-3810
-CVE-2025-47269
+# code-server — version detection false positives and bundled transitive deps
+# we cannot update these independently; they ship inside the code-server deb
+CVE-2023-26114  # code-server version misdetection (<4.10.1 vs actual 4.114.1)
+CVE-2021-3810   # code-server version misdetection
+CVE-2025-47269  # code-server version misdetection
+CVE-2025-64756  # glob: command injection (bundled in code-server)
+CVE-2026-4800   # lodash-es: arbitrary code execution (bundled in code-server)
+CVE-2026-26996  # minimatch: DoS (bundled in code-server)
+CVE-2026-27903  # minimatch: DoS (bundled in code-server)
+CVE-2026-27904  # minimatch: DoS (bundled in code-server)
+CVE-2018-7408   # npm: permission assignment (bundled in code-server)
+CVE-2019-16775  # npm: symlink traversal (bundled in code-server)
+CVE-2019-16776  # npm: arbitrary file write (bundled in code-server)
+CVE-2019-16777  # npm: binary overwrite (bundled in code-server)
+CVE-2026-4926   # path-to-regexp: DoS (bundled in code-server)
+CVE-2026-33671  # picomatch: ReDoS (bundled in code-server)
+CVE-2026-23745  # tar: file overwrite (bundled in code-server)
+CVE-2026-23950  # tar: file overwrite (bundled in code-server)
+CVE-2026-24842  # tar: file creation (bundled in code-server)
+CVE-2026-26960  # tar: file read/write (bundled in code-server)
+CVE-2026-29786  # tar: hardlink path traversal (bundled in code-server)
