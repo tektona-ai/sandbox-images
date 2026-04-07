@@ -56,8 +56,8 @@ RUN curl -fsSL -o /tmp/node.tar.xz \
     rm /tmp/node.tar.xz
 
 # code-server (pinned .deb with integrity check)
-ARG CODE_SERVER_VERSION=4.111.0
-ARG CODE_SERVER_SHA256=37706441a7eaf044479ee5cb710e72dc70105dfd226bab6513fa315f8a8f4e49
+ARG CODE_SERVER_VERSION=4.114.1
+ARG CODE_SERVER_SHA256=b3430ea87ac89b3199a1fad61e334922c60ff1cd0b87c1d5dba2ebe07fc38ae0
 RUN curl -fsSL -o /tmp/code-server.deb \
     "https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server_${CODE_SERVER_VERSION}_amd64.deb" && \
     echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
@@ -65,8 +65,8 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     rm /tmp/code-server.deb
 
 # JetBrains Toolbox (pinned with integrity check)
-ARG JETBRAINS_TOOLBOX_VERSION=3.3.1.75249
-ARG JETBRAINS_TOOLBOX_SHA256=49f281161adcf4224a768e95a3e9ef5cb8fb01aefe4762443e1ae2b2539745a1
+ARG JETBRAINS_TOOLBOX_VERSION=3.4.1.78303
+ARG JETBRAINS_TOOLBOX_SHA256=98afad9070063c620d8b107e53a42c3edc63418b496e025bb2230e6aa6e23f99
 RUN curl -fsSL -o /tmp/jetbrains-toolbox.tar.gz \
     "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JETBRAINS_TOOLBOX_VERSION}.tar.gz" && \
     echo "${JETBRAINS_TOOLBOX_SHA256}  /tmp/jetbrains-toolbox.tar.gz" | sha256sum -c - && \

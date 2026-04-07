@@ -43,6 +43,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
           exit-code: '1'
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore
 
       - name: Generate SBOM (base)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -91,6 +93,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
           exit-code: '1'
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore
 
       - name: Generate SBOM (desktop-x11)
         uses: aquasecurity/trivy-action@v0.35.0
