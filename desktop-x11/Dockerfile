@@ -1,6 +1,10 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
+LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
+LABEL org.opencontainers.image.description="Tektona desktop sandbox — X11 desktop with Openbox, Chrome, LibreOffice, and Plank dock for AI computer-use agents"
+LABEL org.opencontainers.image.licenses="MIT"
+
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
