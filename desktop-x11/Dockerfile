@@ -70,10 +70,14 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
 # Desktop wallpaper
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
+# Chrome wrapper: adds --no-sandbox when running as root, plus VM-friendly flags
+RUN printf '#!/bin/bash\nARGS=(--no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage)\nif [ "$(id -u)" -eq 0 ]; then\n  ARGS+=(--no-sandbox)\nfi\nexec /opt/google/chrome/chrome "${ARGS[@]}" "$@"\n' \
+    > /usr/local/bin/google-chrome-tektona && chmod +x /usr/local/bin/google-chrome-tektona
+
 # Desktop configuration (single layer for all config files)
 RUN set -e && \
-    # Chrome: skip first-run setup
-    sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/bin/google-chrome-stable --no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI|' \
+    # Chrome: point .desktop at our wrapper
+    sed -i 's|Exec=/usr/bin/google-chrome-stable|Exec=/usr/local/bin/google-chrome-tektona|g' \
     /usr/share/applications/google-chrome.desktop && \
     # DMZ-Black cursor (high visibility for AI computer-use)
     mkdir -p /usr/share/icons/default && \
@@ -103,7 +107,7 @@ RUN set -e && \
     dconf update 2>/dev/null || true && \
     # Openbox menu (no "Restart" entry)
     mkdir -p /etc/skel/.config/openbox && \
-    printf '<?xml version="1.0" encoding="UTF-8"?>\n<openbox_menu xmlns="http://openbox.org/3.4/menu">\n  <menu id="root-menu" label="Desktop">\n    <item label="Terminal"><action name="Execute"><execute>xfce4-terminal</execute></action></item>\n    <item label="File Manager"><action name="Execute"><execute>pcmanfm</execute></action></item>\n    <item label="Chrome"><action name="Execute"><execute>google-chrome-stable</execute></action></item>\n    <separator />\n    <item label="Reconfigure"><action name="Reconfigure" /></item>\n  </menu>\n</openbox_menu>\n' \
+    printf '<?xml version="1.0" encoding="UTF-8"?>\n<openbox_menu xmlns="http://openbox.org/3.4/menu">\n  <menu id="root-menu" label="Desktop">\n    <item label="Terminal"><action name="Execute"><execute>xfce4-terminal</execute></action></item>\n    <item label="File Manager"><action name="Execute"><execute>pcmanfm</execute></action></item>\n    <item label="Chrome"><action name="Execute"><execute>google-chrome-tektona</execute></action></item>\n    <separator />\n    <item label="Reconfigure"><action name="Reconfigure" /></item>\n  </menu>\n</openbox_menu>\n' \
     > /etc/skel/.config/openbox/menu.xml && \
     # Openbox Nightmare theme
     mkdir -p /usr/share/themes/Nightmare/openbox-3 && \
