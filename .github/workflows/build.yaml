@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -29,6 +30,17 @@ jobs:
         if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      - name: Extract image tags and labels (base)
+        id: meta-base
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/sandbox-base
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=,format=long
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
       - name: Build and push base image
         id: build-base
         uses: docker/build-push-action@v6
@@ -36,13 +48,12 @@ jobs:
           context: .
           file: sandbox-base/Dockerfile
           build-args: |
-            IMAGE_VERSION=${{ github.sha }}
+            IMAGE_VERSION=${{ steps.meta-base.outputs.version }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
-          tags: |
-            ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
-            ${{ env.REGISTRY }}/sandbox-base:latest
+          tags: ${{ steps.meta-base.outputs.tags }}
+          labels: ${{ steps.meta-base.outputs.labels }}
           cache-from: type=gha,scope=sandbox-base
           cache-to: type=gha,mode=max,scope=sandbox-base
 
@@ -83,6 +94,17 @@ jobs:
         if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      - name: Extract image tags and labels (desktop-x11)
+        id: meta-desktop
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/desktop-x11
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=,format=long
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
       - name: Build and push desktop-x11 image
         id: build-desktop-x11
         uses: docker/build-push-action@v6
@@ -92,9 +114,8 @@ jobs:
             BASE_IMAGE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
-          tags: |
-            ${{ env.REGISTRY }}/desktop-x11:${{ github.sha }}
-            ${{ env.REGISTRY }}/desktop-x11:latest
+          tags: ${{ steps.meta-desktop.outputs.tags }}
+          labels: ${{ steps.meta-desktop.outputs.labels }}
           cache-from: type=gha,scope=desktop-x11
           cache-to: type=gha,mode=max,scope=desktop-x11
 
