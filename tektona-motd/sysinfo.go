@@ -3,9 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"net"
 	"os"
-	"os/exec"
 	"os/user"
 	"runtime"
 	"strconv"
@@ -14,29 +12,19 @@ import (
 	"time"
 )
 
-type Session struct {
-	User string
-	Line string
-	From string
-	When string
-}
-
 type Info struct {
-	Hostname    string
-	OS          string
-	Kernel      string
-	Uptime      time.Duration
-	MemTotalKB  uint64
-	MemAvailKB  uint64
-	DiskTotalB  uint64
-	DiskFreeB   uint64
-	Load1       float64
-	NCPU        int
-	IPs         []string
-	User        string
-	SessionType string // "SSH from x.x.x.x", "VNC :0", or "interactive"
-	SandboxID   string
-	Sessions    []Session
+	Hostname   string
+	OS         string
+	Kernel     string
+	Uptime     time.Duration
+	MemTotalKB uint64
+	MemAvailKB uint64
+	DiskTotalB uint64
+	DiskFreeB  uint64
+	Load1      float64
+	NCPU       int
+	User       string
+	SandboxID  string
 }
 
 func gather() Info {
@@ -55,10 +43,7 @@ func gather() Info {
 	i.MemTotalKB, i.MemAvailKB = readMeminfo()
 	i.DiskTotalB, i.DiskFreeB = readDisk("/")
 	i.Load1 = readLoad1()
-	i.IPs = readIPs()
-	i.SessionType = readSessionType()
 	i.SandboxID = readSandboxID()
-	i.Sessions = readSessions()
 	return i
 }
 
@@ -147,47 +132,6 @@ func readLoad1() float64 {
 	return v
 }
 
-func readIPs() []string {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return nil
-	}
-	var out []string
-	for _, ifc := range ifaces {
-		if ifc.Flags&net.FlagLoopback != 0 || ifc.Flags&net.FlagUp == 0 {
-			continue
-		}
-		addrs, err := ifc.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, a := range addrs {
-			ipn, ok := a.(*net.IPNet)
-			if !ok || ipn.IP.IsLinkLocalUnicast() {
-				continue
-			}
-			if v4 := ipn.IP.To4(); v4 != nil {
-				out = append(out, v4.String())
-			}
-		}
-	}
-	return out
-}
-
-func readSessionType() string {
-	if c := os.Getenv("SSH_CONNECTION"); c != "" {
-		fields := strings.Fields(c)
-		if len(fields) >= 1 {
-			return "SSH from " + fields[0]
-		}
-		return "SSH"
-	}
-	if d := os.Getenv("DISPLAY"); d != "" {
-		return "VNC " + d
-	}
-	return "interactive"
-}
-
 func readSandboxID() string {
 	if v := os.Getenv("TEKTONA_SANDBOX_ID"); v != "" {
 		return v
@@ -200,33 +144,6 @@ func readSandboxID() string {
 		}
 	}
 	return ""
-}
-
-func readSessions() []Session {
-	out, err := exec.Command("who").Output()
-	if err != nil {
-		return nil
-	}
-	var sessions []Session
-	s := bufio.NewScanner(strings.NewReader(string(out)))
-	for s.Scan() {
-		fields := strings.Fields(s.Text())
-		if len(fields) < 2 {
-			continue
-		}
-		sess := Session{User: fields[0], Line: fields[1]}
-		if len(fields) >= 4 {
-			sess.When = fields[2] + " " + fields[3]
-		}
-		// Remaining fields may contain "(host)" for remote logins.
-		for _, f := range fields[4:] {
-			if strings.HasPrefix(f, "(") && strings.HasSuffix(f, ")") {
-				sess.From = strings.Trim(f, "()")
-			}
-		}
-		sessions = append(sessions, sess)
-	}
-	return sessions
 }
 
 func formatUptime(d time.Duration) string {

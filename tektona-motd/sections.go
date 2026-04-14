@@ -24,9 +24,6 @@ func renderSystem(i Info) string {
 	b.WriteString(kv("OS", i.OS))
 	b.WriteString(kv("Kernel", i.Kernel))
 	b.WriteString(kv("Uptime", formatUptime(i.Uptime)))
-	if len(i.IPs) > 0 {
-		b.WriteString(kv("IPs", strings.Join(i.IPs, ", ")))
-	}
 	return b.String()
 }
 
@@ -55,22 +52,6 @@ func renderResources(i Info) string {
 	b.WriteString("  " + styleLabel.Render(fmt.Sprintf("%-12s", "Load")) +
 		renderLoadBar(i.Load1, i.NCPU) + "\n")
 
-	return b.String()
-}
-
-func renderSessions(i Info) string {
-	if len(i.Sessions) == 0 {
-		return ""
-	}
-	var b strings.Builder
-	b.WriteString(section("Active sessions"))
-	for _, s := range i.Sessions {
-		line := fmt.Sprintf("%-12s %-10s %s", s.User, s.Line, s.When)
-		if s.From != "" {
-			line += "  from " + s.From
-		}
-		b.WriteString("  " + styleValue.Render(line) + "\n")
-	}
 	return b.String()
 }
 

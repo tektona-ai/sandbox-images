@@ -70,8 +70,9 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
 # Desktop wallpaper
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
-# Chrome wrapper: adds --no-sandbox when running as root, plus VM-friendly flags
-RUN printf '#!/bin/bash\nARGS=(--no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage)\nif [ "$(id -u)" -eq 0 ]; then\n  ARGS+=(--no-sandbox)\nfi\nexec /opt/google/chrome/chrome "${ARGS[@]}" "$@"\n' \
+# Chrome wrapper: adds --no-sandbox when running as root, plus VM-friendly flags.
+# --test-type suppresses the "unsupported command-line flag: --no-sandbox" infobar.
+RUN printf '#!/bin/bash\nARGS=(--no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage)\nif [ "$(id -u)" -eq 0 ]; then\n  ARGS+=(--no-sandbox --test-type)\nfi\nexec /opt/google/chrome/chrome "${ARGS[@]}" "$@"\n' \
     > /usr/local/bin/google-chrome-tektona && chmod +x /usr/local/bin/google-chrome-tektona
 
 # Desktop configuration (single layer for all config files)
@@ -90,7 +91,7 @@ RUN set -e && \
     for app in google-chrome:google-chrome \
                xfce4-terminal:xfce4-terminal \
                pcmanfm:pcmanfm \
-               mousepad:mousepad \
+               mousepad:org.xfce.mousepad \
                gedit:org.gnome.gedit \
                galculator:galculator \
                libreoffice-writer:libreoffice-writer \
@@ -177,7 +178,12 @@ RUN set -e && \
     # PCManFM desktop wallpaper
     mkdir -p /etc/skel/.config/pcmanfm/default && \
     printf '[*]\nwallpaper_mode=stretch\nwallpaper=/usr/share/backgrounds/tektona-desktop.png\ndesktop_bg=#1a1a2e\nshow_documents=1\nshow_trash=0\nshow_mounts=0\n' \
-    > /etc/skel/.config/pcmanfm/default/desktop-items-0.conf
+    > /etc/skel/.config/pcmanfm/default/desktop-items-0.conf && \
+    # xfce4-terminal: use Noto Sans Mono (from fonts-noto-mono) for full coverage
+    # of the Unicode glyphs (block-drawing, braille) rendered by tektona-motd.
+    mkdir -p /etc/skel/.config/xfce4/terminal && \
+    printf '[Configuration]\nFontName=Noto Sans Mono 11\nScrollingUnlimited=FALSE\nScrollingLines=10000\nMiscCursorBlinks=FALSE\nMiscCursorShape=TERMINAL_CURSOR_SHAPE_BLOCK\nMiscMenubarDefault=FALSE\nMiscToolbarDefault=FALSE\nMiscShowUnsafePasteDialog=FALSE\n' \
+    > /etc/skel/.config/xfce4/terminal/terminalrc
 
 USER root
 

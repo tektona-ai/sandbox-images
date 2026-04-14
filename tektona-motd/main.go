@@ -42,10 +42,6 @@ func main() {
 	b.WriteString("\n")
 	b.WriteString(renderResources(info))
 	b.WriteString("\n")
-	if sessions := renderSessions(info); sessions != "" {
-		b.WriteString(sessions)
-		b.WriteString("\n")
-	}
 	b.WriteString(renderFooter())
 	b.WriteString("\n")
 
