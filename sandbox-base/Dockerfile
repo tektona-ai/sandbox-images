@@ -95,7 +95,7 @@ RUN curl -fsSL -o /tmp/jetbrains-toolbox.tar.gz \
     rm /tmp/jetbrains-toolbox.tar.gz
 
 # AI coding CLIs (claude-code, codex, opencode) — locked via package.json
-COPY package.json package-lock.json /tmp/ai-tools/
+COPY sandbox-base/package.json sandbox-base/package-lock.json /tmp/ai-tools/
 RUN cd /tmp/ai-tools && npm install --global-style && \
     ln -s /tmp/ai-tools/node_modules/.bin/claude /usr/local/bin/claude && \
     ln -s /tmp/ai-tools/node_modules/.bin/codex /usr/local/bin/codex && \
