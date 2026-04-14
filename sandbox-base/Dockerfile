@@ -1,3 +1,18 @@
+# syntax=docker/dockerfile:1.7
+
+# ----- tektona-motd build stage -----
+FROM golang:1.25-bookworm@sha256:29e59af995c51a5bf63d072eca973b918e0e7af4db0e4667aa73f1b8da1a6d8c AS motd-build
+WORKDIR /src
+COPY tektona-motd/go.mod tektona-motd/go.sum ./
+RUN go mod download
+COPY tektona-motd/ ./
+ARG IMAGE_VERSION=dev
+ARG BUILD_DATE=unknown
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
+    -ldflags="-s -w -X main.version=${IMAGE_VERSION} -X main.buildDate=${BUILD_DATE}" \
+    -o /out/tektona-motd .
+
+# ----- final image -----
 FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
@@ -95,6 +110,20 @@ RUN curl -fsSL -o /tmp/yq \
     install -m 755 /tmp/yq /usr/local/bin/yq && \
     rm /tmp/yq
 
+
+# Tektona login banner (SSH via pam_motd, VNC terminals via /etc/bash.bashrc)
+COPY --from=motd-build /out/tektona-motd /usr/local/bin/tektona-motd
+COPY tektona-motd/hooks/10-tektona /etc/update-motd.d/10-tektona
+COPY tektona-motd/hooks/tektona-motd.sh /etc/tektona-motd.sh
+RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
+    # Remove Ubuntu's default MOTD scripts so only ours renders.
+    find /etc/update-motd.d -mindepth 1 -not -name '10-tektona' -delete && \
+    : > /etc/motd && \
+    : > /etc/legal && \
+    # Source our hook from system-wide bashrc so interactive VNC terminals
+    # (non-login shells) also render the banner.
+    printf '\n# Tektona login banner\n[ -f /etc/tektona-motd.sh ] && . /etc/tektona-motd.sh\n' \
+        >> /etc/bash.bashrc
 
 USER root
 WORKDIR /home/tektona
