@@ -59,7 +59,7 @@ func renderFooter() string {
 	var b strings.Builder
 	b.WriteString(section("Quick reference"))
 	b.WriteString("  " + styleMuted.Render("docs:    ") +
-		styleValue.Render("https://docs.tektona.ai") + "\n")
+		styleValue.Render("https://tektona.ai/docs") + "\n")
 	b.WriteString("  " + styleMuted.Render("support: ") +
 		styleValue.Render("https://github.com/tektona-ai/sandbox-images/issues") + "\n")
 	b.WriteString("  " + styleMuted.Render("CLI:     ") +
