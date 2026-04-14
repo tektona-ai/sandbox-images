@@ -16,6 +16,7 @@ env:
 
 jobs:
   build-base:
+    if: github.ref_type != 'tag'
     runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
     steps:
       - uses: actions/checkout@v4
@@ -36,10 +37,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/sandbox-base
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,format=long
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push base image
         id: build-base
@@ -48,7 +46,7 @@ jobs:
           context: .
           file: sandbox-base/Dockerfile
           build-args: |
-            IMAGE_VERSION=${{ steps.meta-base.outputs.version }}
+            IMAGE_VERSION=${{ github.sha }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
@@ -79,6 +77,7 @@ jobs:
         run: cosign attest --yes --predicate sandbox-base-sbom.cdx.json --type cyclonedx ${{ env.REGISTRY }}/sandbox-base@${{ steps.build-base.outputs.digest }}
 
   build-desktop-x11:
+    if: github.ref_type != 'tag'
     runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
     needs: build-base
     steps:
@@ -100,10 +99,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/desktop-x11
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,format=long
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       - name: Build and push desktop-x11 image
         id: build-desktop-x11
@@ -139,3 +135,49 @@ jobs:
       - name: Attest SBOM to registry (desktop-x11)
         if: github.event_name != 'pull_request'
         run: cosign attest --yes --predicate desktop-x11-sbom.cdx.json --type cyclonedx ${{ env.REGISTRY }}/desktop-x11@${{ steps.build-desktop-x11.outputs.digest }}
+
+  # Retag an already-built SHA-tagged image with semver tags on a v* tag push.
+  # No rebuild — `docker buildx imagetools create` just adds new tags to the
+  # existing manifest digest. Requires that main has already built the tagged
+  # commit's SHA image. PRs never reach this job (no tag trigger).
+  tag-release:
+    if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
+    strategy:
+      matrix:
+        image: [sandbox-base, desktop-x11]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Add semver tags to existing image
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ matrix.image }}
+          SRC_SHA: ${{ github.sha }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          VERSION="${REF#refs/tags/v}"
+          SRC="${IMAGE}:${SRC_SHA}"
+
+          # Verify the SHA-tagged source exists (commit must have been built on main).
+          docker buildx imagetools inspect "$SRC" > /dev/null
+
+          if [[ "$VERSION" == *-* ]]; then
+            # Pre-release (e.g. v0.4.0-rc1): only tag the full version. No
+            # major.minor rollup, no latest — don't promote unfinished work.
+            echo "Pre-release $VERSION — tagging full version only."
+            docker buildx imagetools create -t "${IMAGE}:${VERSION}" "$SRC"
+          else
+            # Stable: full version + major.minor + latest.
+            MAJMIN="${VERSION%.*}"
+            echo "Stable $VERSION — tagging ${VERSION}, ${MAJMIN}, latest."
+            docker buildx imagetools create \
+              -t "${IMAGE}:${VERSION}" \
+              -t "${IMAGE}:${MAJMIN}" \
+              -t "${IMAGE}:latest" \
+              "$SRC"
+          fi
