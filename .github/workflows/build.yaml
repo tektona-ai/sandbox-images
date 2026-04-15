@@ -90,8 +90,10 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
 
+      # Login unconditionally: on PR we need to pull the base image (either the
+      # just-built SHA on main/tag events, or :latest on PRs since build-base
+      # does not push on PR). Push is still guarded below via `push:`.
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Extract image tags and labels (desktop-x11)
@@ -107,8 +109,12 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: desktop-x11
+          # On PR, build-base only `load`s the SHA image into its own runner —
+          # it isn't pushed to GHCR, so desktop-x11 cannot pull it. Fall back
+          # to the released :latest base on PR. On main/tag events, use the
+          # freshly-built SHA for a tight chain.
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/sandbox-base:${{ github.sha }}
+            BASE_IMAGE=${{ github.event_name == 'pull_request' && format('{0}/sandbox-base:latest', env.REGISTRY) || format('{0}/sandbox-base:{1}', env.REGISTRY, github.sha) }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta-desktop.outputs.tags }}
