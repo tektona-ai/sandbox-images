@@ -30,6 +30,7 @@ CVE-2026-25679  # net/url: incorrect IPv6 host parsing
 CVE-2026-27137  # crypto/x509: email constraint enforcement
 CVE-2026-32280  # crypto/x509: chain-building work limit (yq compiled with Go 1.26.0, awaiting upstream rebuild)
 CVE-2026-32282  # internal/syscall/unix: Root.Chmod symlink escape (yq compiled with Go 1.26.0)
+CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq compiled with Go 1.26.0, fixed in 1.26.2)
 
 # AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
 GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
