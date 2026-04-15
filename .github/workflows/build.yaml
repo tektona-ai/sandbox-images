@@ -148,8 +148,9 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
 
+      # Login unconditionally so PRs can pull the released desktop-x11 base from
+      # GHCR (the push is still guarded below by `push: ${{ ... != 'pull_request' }}`).
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Extract image tags and labels (doom)
