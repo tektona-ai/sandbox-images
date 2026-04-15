@@ -16,15 +16,27 @@ RUN apt-get update && apt-get install -y \
     freedoom \
     && rm -rf /var/lib/apt/lists/*
 
-# Autostart Doom when the openbox session comes up. We use the system-wide
-# /etc/xdg/openbox/autostart path because /home/tektona is not initialised from
-# /etc/skel by sandbox-init — the system-wide file runs regardless of $HOME
-# state. Absolute path to the binary (Debian puts games in /usr/games, which is
-# not in the default shell PATH). --nograbmouse keeps the pointer usable over
-# VNC (cursor not locked to the window).
+# Autostart Doom when the openbox session comes up. Two mechanisms are needed:
+#
+#  1. The autostart script at /etc/xdg/openbox/autostart — system-wide, does
+#     not depend on /home/tektona being initialised from /etc/skel (which
+#     sandbox-init does not do).
+#
+#  2. A shim at /usr/local/bin/openbox. sandbox-init's desktop startup script
+#     launches bare `openbox &`, which skips XDG autostart (only
+#     `openbox-session` reads it). The shim runs the autostart file itself
+#     before exec'ing the real binary. /usr/local/bin is ahead of /usr/bin
+#     in the default PATH, so it transparently replaces the call.
+#
+# Absolute path to chocolate-doom (Debian installs games to /usr/games, which
+# is not in the default shell PATH). --nograbmouse keeps the pointer usable
+# over VNC (cursor not locked to the window).
 RUN printf '#!/bin/sh\n(sleep 2 && /usr/games/chocolate-doom -iwad /usr/share/games/doom/freedoom2.wad -fullscreen -nograbmouse) &\n' \
     > /etc/xdg/openbox/autostart && \
-    chmod +x /etc/xdg/openbox/autostart
+    chmod +x /etc/xdg/openbox/autostart && \
+    printf '#!/bin/sh\n[ -x /etc/xdg/openbox/autostart ] && /etc/xdg/openbox/autostart\nexec /usr/bin/openbox "$@"\n' \
+    > /usr/local/bin/openbox && \
+    chmod +x /usr/local/bin/openbox
 
 # Desktop launcher for manual re-launch from the openbox menu / terminal.
 RUN cat > /usr/share/applications/freedoom2.desktop <<'EOF'
