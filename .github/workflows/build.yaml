@@ -205,6 +205,9 @@ jobs:
     if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')
     runs-on: [self-hosted, linux, x64, proxmox, ubuntu-24.04]
     strategy:
+      # One leg failing (e.g. its SHA image hasn't finished building yet) must
+      # not cancel the others — each image is retagged independently.
+      fail-fast: false
       matrix:
         image: [sandbox-base, desktop-x11, doom]
     steps:
