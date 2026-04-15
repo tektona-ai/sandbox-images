@@ -8,6 +8,7 @@ Container images for [Tektona](https://github.com/tektona-ai/tektona) sandbox VM
 |-------|-------------|------|
 | **sandbox-base** | Ubuntu 24.04 base with dev tools, Node.js, code-server, AI coding CLIs | `ghcr.io/tektona-ai/sandbox-base:latest` |
 | **desktop-x11** | X11 desktop environment with Chrome, LibreOffice, and desktop apps for AI computer-use | `ghcr.io/tektona-ai/desktop-x11:latest` |
+| **doom** | chocolate-doom + Freedoom autostart demo (extends `desktop-x11:0.3.1`) | `ghcr.io/tektona-ai/doom:latest` |
 
 ## Structure
 
