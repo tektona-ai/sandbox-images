@@ -63,6 +63,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           trivyignores: .trivyignore
+          timeout: 15m  # default 5m is too short — times out analysing opt/google/chrome/resources.pak
 
       - name: Generate SBOM (base)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -123,6 +124,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           trivyignores: .trivyignore
+          timeout: 15m  # default 5m is too short — times out analysing opt/google/chrome/resources.pak
 
       - name: Generate SBOM (desktop-x11)
         uses: aquasecurity/trivy-action@v0.35.0
@@ -181,6 +183,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           trivyignores: .trivyignore
+          timeout: 15m  # default 5m is too short — times out analysing opt/google/chrome/resources.pak
 
       - name: Generate SBOM (doom)
         uses: aquasecurity/trivy-action@v0.35.0
