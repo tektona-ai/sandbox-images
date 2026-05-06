@@ -53,12 +53,34 @@ RUN apt-get update && apt-get install -y \
     shellcheck \
     strace \
     sudo \
+    systemd \
+    systemd-sysv \
+    dbus \
+    libpam-systemd \
     tree \
     unzip \
     wget \
     xz-utils \
     zstd \
     && rm -rf /var/lib/apt/lists/*
+
+# Mask systemd units that would fight sandbox-init's pre-boot setup.
+# Done as symlinks (not `systemctl mask`) because there's no running systemd
+# inside the build context.
+# - systemd-resolved/-networkd: sandbox-init owns /etc/resolv.conf and the NIC
+#   (configured from kernel cmdline before switchRoot).
+# - systemd-modules-load: the custom QEMU kernel ships drivers built-in;
+#   there's no matching /lib/modules tree to load against.
+# - systemd-firstboot: blocks boot prompting for locale/timezone on a "fresh"
+#   rootfs, which every snapshot clone looks like once machine-id is reset.
+RUN for unit in \
+        systemd-resolved.service \
+        systemd-networkd.service \
+        systemd-networkd.socket \
+        systemd-modules-load.service \
+        systemd-firstboot.service; do \
+        ln -sf /dev/null "/etc/systemd/system/$unit"; \
+    done
 
 # User setup — sandbox processes run as root inside the runtime, but
 # /home/tektona is the user-facing home directory.
@@ -128,5 +150,8 @@ RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
 USER root
 WORKDIR /home/tektona
 
-# Default entrypoint — replaced by daemon at runtime
-ENTRYPOINT ["sleep", "infinity"]
+# PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
+# in a fresh PID/mount namespace (see internal/services/sandbox-init's
+# selectEntrypoint precedence rules). Keeping ENTRYPOINT/CMD unset lets that
+# detection win; setting either would force sandbox-init to launch the image
+# command instead and skip systemd entirely.
