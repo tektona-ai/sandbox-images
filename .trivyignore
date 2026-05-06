@@ -28,6 +28,10 @@ CVE-2026-31802  # tar: file overwrite via symlink (bundled in code-server)
 # Go stdlib (bundled in compiled Go binaries — yq, etc.)
 CVE-2026-25679  # net/url: incorrect IPv6 host parsing
 CVE-2026-27137  # crypto/x509: email constraint enforcement
+# doom inherits from the frozen desktop-x11:0.3.1 base which ships the
+# pre-Go-1.26.2 yq. sandbox-base bumped to yq 4.53.2 (Go 1.26.2) but the doom
+# image keeps the old base for stability; until doom rebases, these stay.
+CVE-2026-32280  # crypto/x509+tls: DoS (yq Go 1.26.0 in desktop-x11:0.3.1)
 
 # AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
 GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
