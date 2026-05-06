@@ -124,8 +124,8 @@ RUN cd /tmp/ai-tools && npm install --global-style && \
     ln -s /tmp/ai-tools/node_modules/.bin/opencode /usr/local/bin/opencode
 
 # yq (pinned binary with integrity check)
-ARG YQ_VERSION=4.52.4
-ARG YQ_SHA256=0c4d965ea944b64b8fddaf7f27779ee3034e5693263786506ccd1c120f184e8c
+ARG YQ_VERSION=4.53.2
+ARG YQ_SHA256=d56bf5c6819e8e696340c312bd70f849dc1678a7cda9c2ad63eebd906371d56b
 RUN curl -fsSL -o /tmp/yq \
     "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" && \
     echo "${YQ_SHA256}  /tmp/yq" | sha256sum -c - && \
