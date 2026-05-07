@@ -28,6 +28,15 @@ CVE-2026-31802  # tar: file overwrite via symlink (bundled in code-server)
 # Go stdlib (bundled in compiled Go binaries — yq, etc.)
 CVE-2026-25679  # net/url: incorrect IPv6 host parsing
 CVE-2026-27137  # crypto/x509: email constraint enforcement
+# The desktop-x11 PR build inherits from sandbox-base:latest (this PR doesn't
+# push its sandbox-base to GHCR so PRs fall back to :latest; see build.yaml).
+# :latest still ships pre-Go-1.26.2 yq. After this PR merges, the chain uses
+# the new SHA base where these are gone — these ignores can be removed in a
+# follow-up once :latest has rolled forward.
+CVE-2026-32280  # crypto/x509+tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32281  # crypto/x509: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32283  # crypto/tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq Go 1.26.0 in sandbox-base:latest)
 
 # AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
 GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
