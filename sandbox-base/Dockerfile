@@ -152,6 +152,10 @@ WORKDIR /home/tektona
 
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's
-# selectEntrypoint precedence rules). Keeping ENTRYPOINT/CMD unset lets that
-# detection win; setting either would force sandbox-init to launch the image
-# command instead and skip systemd entirely.
+# selectEntrypoint precedence rules). The detection only wins when both
+# ENTRYPOINT and CMD are empty; ubuntu:24.04 inherits CMD ["bash"] from its
+# parent which masks systemd-detection (sandbox-init runs bash, bash exits
+# immediately on no-stdin, sandbox-init tears down its gRPC server). Reset
+# CMD explicitly so the inherited value doesn't sneak in.
+ENTRYPOINT []
+CMD []
