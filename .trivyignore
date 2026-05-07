@@ -1,6 +1,8 @@
 # JetBrains Toolbox bundled dependencies (cannot update independently)
 CVE-2026-33870  # netty-codec-http: request smuggling (bundled in toolbox.jar)
 CVE-2022-41404  # ini4j: DoS (bundled in ini4j-0.5.4.jar)
+CVE-2026-42583  # netty-codec-compression: Lz4FrameDecoder resource exhaustion (bundled in toolbox.jar)
+CVE-2026-42584  # netty-codec-http: HttpClientCodec response desync (bundled in toolbox.jar)
 
 # code-server — version detection false positives and bundled transitive deps
 # we cannot update these independently; they ship inside the code-server deb
@@ -28,10 +30,18 @@ CVE-2026-31802  # tar: file overwrite via symlink (bundled in code-server)
 # Go stdlib (bundled in compiled Go binaries — yq, etc.)
 CVE-2026-25679  # net/url: incorrect IPv6 host parsing
 CVE-2026-27137  # crypto/x509: email constraint enforcement
-CVE-2026-32280  # crypto/x509: chain-building work limit (yq compiled with Go 1.26.0, awaiting upstream rebuild)
-CVE-2026-32282  # internal/syscall/unix: Root.Chmod symlink escape (yq compiled with Go 1.26.0)
-CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq compiled with Go 1.26.0, fixed in 1.26.2)
+# The desktop-x11 PR build inherits from sandbox-base:latest (this PR doesn't
+# push its sandbox-base to GHCR so PRs fall back to :latest; see build.yaml).
+# :latest still ships pre-Go-1.26.2 yq. After this PR merges, the chain uses
+# the new SHA base where these are gone — these ignores can be removed in a
+# follow-up once :latest has rolled forward.
+CVE-2026-32280  # crypto/x509+tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32281  # crypto/x509: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32283  # crypto/tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq Go 1.26.0 in sandbox-base:latest)
 
 # AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
 GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
 CVE-2026-39983       # basic-ftp: command injection via CRLF in file paths — bundled transitive dep
+CVE-2026-41324       # basic-ftp: DoS via unbounded memory — bundled transitive dep, fixed in 5.3.0
+CVE-2026-44240       # basic-ftp: malicious FTP server triggers client-side issue — bundled transitive dep, fixed in 5.3.1
