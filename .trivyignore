@@ -1,65 +1,76 @@
-# Trivy waiver — HIGH/CRITICAL CVEs in BUNDLED developer tooling that ships as
-# opaque vendor packages and cannot be patched independently of an upstream tool
-# bump. Verified all findings are under opt/jetbrains-toolbox/*.jar and
-# usr/lib/code-server/node_modules/* (the Ubuntu OS layer reports 0 HIGH/CRITICAL).
-# These run inside an isolated, single-tenant sandbox VM, not a public service.
-# Revisit / prune this list whenever code-server or JetBrains Toolbox is updated.
-CVE-2018-7408
-CVE-2019-16775
-CVE-2019-16776
-CVE-2019-16777
-CVE-2021-3810
-CVE-2022-41404
-CVE-2023-26114
-CVE-2025-47269
-CVE-2025-64756
+# JetBrains Toolbox bundled dependencies (cannot update independently)
+CVE-2026-33870  # netty-codec-http: request smuggling (bundled in toolbox.jar)
+CVE-2022-41404  # ini4j: DoS (bundled in ini4j-0.5.4.jar)
+CVE-2026-42583  # netty-codec-compression: Lz4FrameDecoder resource exhaustion (bundled in toolbox.jar)
+CVE-2026-42584  # netty-codec-http: HttpClientCodec response desync (bundled in toolbox.jar)
+CVE-2026-42587  # netty-codec-http: HttpContentDecompressor maxAllocation bypass (bundled in toolbox.jar)
+
+# code-server — version detection false positives and bundled transitive deps
+# we cannot update these independently; they ship inside the code-server deb
+CVE-2023-26114  # code-server version misdetection (<4.10.1 vs actual 4.114.1)
+CVE-2021-3810   # code-server version misdetection
+CVE-2025-47269  # code-server version misdetection
+CVE-2025-64756  # glob: command injection (bundled in code-server)
+CVE-2026-4800   # lodash-es: arbitrary code execution (bundled in code-server)
+CVE-2026-26996  # minimatch: DoS (bundled in code-server)
+CVE-2026-27903  # minimatch: DoS (bundled in code-server)
+CVE-2026-27904  # minimatch: DoS (bundled in code-server)
+CVE-2018-7408   # npm: permission assignment (bundled in code-server)
+CVE-2019-16775  # npm: symlink traversal (bundled in code-server)
+CVE-2019-16776  # npm: arbitrary file write (bundled in code-server)
+CVE-2019-16777  # npm: binary overwrite (bundled in code-server)
+CVE-2026-4926   # path-to-regexp: DoS (bundled in code-server)
+CVE-2026-33671  # picomatch: ReDoS (bundled in code-server)
+CVE-2026-23745  # tar: file overwrite (bundled in code-server)
+CVE-2026-23950  # tar: file overwrite (bundled in code-server)
+CVE-2026-24842  # tar: file creation (bundled in code-server)
+CVE-2026-26960  # tar: file read/write (bundled in code-server)
+CVE-2026-29786  # tar: hardlink path traversal (bundled in code-server)
+CVE-2026-31802  # tar: file overwrite via symlink (bundled in code-server)
+
+# Go stdlib (bundled in compiled Go binaries — yq, etc.)
+CVE-2026-25679  # net/url: incorrect IPv6 host parsing
+CVE-2026-27137  # crypto/x509: email constraint enforcement
+# The desktop-x11 PR build inherits from sandbox-base:latest (this PR doesn't
+# push its sandbox-base to GHCR so PRs fall back to :latest; see build.yaml).
+# :latest still ships pre-Go-1.26.2 yq. After this PR merges, the chain uses
+# the new SHA base where these are gone — these ignores can be removed in a
+# follow-up once :latest has rolled forward.
+CVE-2026-32280  # crypto/x509+tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32281  # crypto/x509: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-32283  # crypto/tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
+CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq Go 1.26.0 in sandbox-base:latest)
+
+# AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
+GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
+CVE-2026-39983       # basic-ftp: command injection via CRLF in file paths — bundled transitive dep
+CVE-2026-41324       # basic-ftp: DoS via unbounded memory — bundled transitive dep, fixed in 5.3.0
+CVE-2026-44240       # basic-ftp: malicious FTP server triggers client-side issue — bundled transitive dep, fixed in 5.3.1
+
+# --- Newly published CVEs in the same bundled tooling (added 2026-06-26).
+#     Still unfixable independently; under opt/jetbrains-toolbox/* and
+#     usr/lib/code-server/node_modules/*. Prune on the next tool bump.
 CVE-2026-12151
-CVE-2026-23745
-CVE-2026-23950
-CVE-2026-24842
-CVE-2026-25679
 CVE-2026-25680
 CVE-2026-25681
-CVE-2026-26960
-CVE-2026-26996
 CVE-2026-27136
-CVE-2026-27137
 CVE-2026-27145
-CVE-2026-27903
-CVE-2026-27904
-CVE-2026-29786
-CVE-2026-31802
-CVE-2026-32280
-CVE-2026-32281
-CVE-2026-32283
-CVE-2026-33671
-CVE-2026-33810
 CVE-2026-33811
 CVE-2026-33814
-CVE-2026-33870
 CVE-2026-39820
 CVE-2026-39821
 CVE-2026-39836
-CVE-2026-39983
-CVE-2026-41324
 CVE-2026-42499
 CVE-2026-42502
 CVE-2026-42504
 CVE-2026-42506
-CVE-2026-42583
-CVE-2026-42584
-CVE-2026-42587
-CVE-2026-44240
 CVE-2026-44249
 CVE-2026-45033
 CVE-2026-45416
-CVE-2026-4800
 CVE-2026-48779
-CVE-2026-4926
 CVE-2026-50010
 CVE-2026-54512
 CVE-2026-54513
 CVE-2026-6734
 CVE-2026-9277
 CVE-2026-9697
-GHSA-6v7q-wjvx-w8wg
