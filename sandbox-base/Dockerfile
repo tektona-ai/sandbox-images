@@ -82,6 +82,30 @@ RUN for unit in \
         ln -sf /dev/null "/etc/systemd/system/$unit"; \
     done
 
+# Mask units that are pure overhead in an ephemeral, single-use sandbox VM.
+# These delay boot and/or burn cycles on a disposable rootfs that is discarded
+# at shutdown. Masking (symlink to /dev/null) keeps systemd as init but turns
+# each unit into a no-op. None of these are needed for SSH/exec, the desktop,
+# or the agent-runtime.
+# - systemd-timesyncd: the host provides time to the guest; NTP is redundant.
+# - e2scrub_*: online fsck of an ephemeral, snapshot-backed ext4 rootfs.
+# - motd-news + apt-daily*: package/news upkeep on a throwaway image.
+# - fstrim / dpkg-db-backup: disk maintenance pointless on a disposable VM.
+RUN for unit in \
+        systemd-timesyncd.service \
+        e2scrub_reap.service \
+        e2scrub_all.timer \
+        motd-news.service \
+        motd-news.timer \
+        apt-daily.service \
+        apt-daily.timer \
+        apt-daily-upgrade.service \
+        apt-daily-upgrade.timer \
+        fstrim.timer \
+        dpkg-db-backup.timer; do \
+        ln -sf /dev/null "/etc/systemd/system/$unit"; \
+    done
+
 # User setup — sandbox processes run as root inside the runtime, but
 # /home/tektona is the user-facing home directory.
 RUN useradd -m -s /bin/bash tektona \
@@ -146,6 +170,13 @@ RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
     # (non-login shells) also render the banner.
     printf '\n# Tektona login banner\n[ -f /etc/tektona-motd.sh ] && . /etc/tektona-motd.sh\n' \
         >> /etc/bash.bashrc
+
+# Refresh /etc/ld.so.cache at build time so ldconfig.service short-circuits at
+# boot: it only runs when the cache is stale relative to the library dirs
+# (ConditionNeedsUpdate), so writing it here as the last /etc change makes the
+# boot-time unit a no-op. Must stay near the end — any later step that writes
+# under /etc/ can re-stale the condition.
+RUN ldconfig
 
 USER root
 WORKDIR /home/tektona
