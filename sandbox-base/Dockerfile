@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
 FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
-LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 24.04 with Node.js, code-server, JetBrains Toolbox, and AI coding CLIs"
+LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 24.04 with Node.js, code-server, and AI coding CLIs"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -128,17 +128,6 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
     dpkg -i /tmp/code-server.deb && \
     rm /tmp/code-server.deb
-
-# JetBrains Toolbox (pinned with integrity check)
-ARG JETBRAINS_TOOLBOX_VERSION=3.4.1.78303
-ARG JETBRAINS_TOOLBOX_SHA256=98afad9070063c620d8b107e53a42c3edc63418b496e025bb2230e6aa6e23f99
-RUN curl -fsSL -o /tmp/jetbrains-toolbox.tar.gz \
-    "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JETBRAINS_TOOLBOX_VERSION}.tar.gz" && \
-    echo "${JETBRAINS_TOOLBOX_SHA256}  /tmp/jetbrains-toolbox.tar.gz" | sha256sum -c - && \
-    tar -xzf /tmp/jetbrains-toolbox.tar.gz -C /opt && \
-    mv /opt/jetbrains-toolbox-* /opt/jetbrains-toolbox && \
-    ln -s /opt/jetbrains-toolbox/bin/jetbrains-toolbox /usr/local/bin/jetbrains-toolbox && \
-    rm /tmp/jetbrains-toolbox.tar.gz
 
 # AI coding CLIs (claude-code, codex, opencode) — locked via package.json
 COPY sandbox-base/package.json sandbox-base/package-lock.json /tmp/ai-tools/
