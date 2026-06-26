@@ -67,6 +67,19 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
     fonts-noto-mono \
     && rm -rf /var/lib/apt/lists/*
 
+# Mask units pulled in by the desktop packages that are useless in an
+# ephemeral sandbox VM (symlink to /dev/null keeps systemd as init, no-ops
+# the unit). Neither is needed for the on-demand X/openbox desktop.
+# - apport: crash-report collection on a disposable rootfs.
+# - udisks2: removable-media/disk management; no hotplug storage in the VM.
+RUN for unit in \
+        apport.service \
+        apport-autoreport.service \
+        apport-forward.socket \
+        udisks2.service; do \
+        ln -sf /dev/null "/etc/systemd/system/$unit"; \
+    done
+
 # Desktop wallpaper
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
@@ -184,6 +197,11 @@ RUN set -e && \
     mkdir -p /etc/skel/.config/xfce4/terminal && \
     printf '[Configuration]\nFontName=Noto Sans Mono 11\nScrollingUnlimited=FALSE\nScrollingLines=10000\nMiscCursorBlinks=FALSE\nMiscCursorShape=TERMINAL_CURSOR_SHAPE_BLOCK\nMiscMenubarDefault=FALSE\nMiscToolbarDefault=FALSE\nMiscShowUnsafePasteDialog=FALSE\n' \
     > /etc/skel/.config/xfce4/terminal/terminalrc
+
+# Refresh /etc/ld.so.cache after the desktop layer's package installs and /etc
+# writes so ldconfig.service stays a no-op at boot (see the matching step in
+# sandbox-base). Keep this as the last /etc write.
+RUN ldconfig
 
 USER root
 

@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
 FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
-LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 24.04 with Node.js, code-server, JetBrains Toolbox, and AI coding CLIs"
+LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 24.04 with Node.js, code-server, and AI coding CLIs"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -82,6 +82,30 @@ RUN for unit in \
         ln -sf /dev/null "/etc/systemd/system/$unit"; \
     done
 
+# Mask units that are pure overhead in an ephemeral, single-use sandbox VM.
+# These delay boot and/or burn cycles on a disposable rootfs that is discarded
+# at shutdown. Masking (symlink to /dev/null) keeps systemd as init but turns
+# each unit into a no-op. None of these are needed for SSH/exec, the desktop,
+# or the agent-runtime.
+# - systemd-timesyncd: the host provides time to the guest; NTP is redundant.
+# - e2scrub_*: online fsck of an ephemeral, snapshot-backed ext4 rootfs.
+# - motd-news + apt-daily*: package/news upkeep on a throwaway image.
+# - fstrim / dpkg-db-backup: disk maintenance pointless on a disposable VM.
+RUN for unit in \
+        systemd-timesyncd.service \
+        e2scrub_reap.service \
+        e2scrub_all.timer \
+        motd-news.service \
+        motd-news.timer \
+        apt-daily.service \
+        apt-daily.timer \
+        apt-daily-upgrade.service \
+        apt-daily-upgrade.timer \
+        fstrim.timer \
+        dpkg-db-backup.timer; do \
+        ln -sf /dev/null "/etc/systemd/system/$unit"; \
+    done
+
 # User setup — sandbox processes run as root inside the runtime, but
 # /home/tektona is the user-facing home directory.
 RUN useradd -m -s /bin/bash tektona \
@@ -104,17 +128,6 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
     dpkg -i /tmp/code-server.deb && \
     rm /tmp/code-server.deb
-
-# JetBrains Toolbox (pinned with integrity check)
-ARG JETBRAINS_TOOLBOX_VERSION=3.4.1.78303
-ARG JETBRAINS_TOOLBOX_SHA256=98afad9070063c620d8b107e53a42c3edc63418b496e025bb2230e6aa6e23f99
-RUN curl -fsSL -o /tmp/jetbrains-toolbox.tar.gz \
-    "https://download.jetbrains.com/toolbox/jetbrains-toolbox-${JETBRAINS_TOOLBOX_VERSION}.tar.gz" && \
-    echo "${JETBRAINS_TOOLBOX_SHA256}  /tmp/jetbrains-toolbox.tar.gz" | sha256sum -c - && \
-    tar -xzf /tmp/jetbrains-toolbox.tar.gz -C /opt && \
-    mv /opt/jetbrains-toolbox-* /opt/jetbrains-toolbox && \
-    ln -s /opt/jetbrains-toolbox/bin/jetbrains-toolbox /usr/local/bin/jetbrains-toolbox && \
-    rm /tmp/jetbrains-toolbox.tar.gz
 
 # AI coding CLIs (claude-code, codex, opencode) — locked via package.json
 COPY sandbox-base/package.json sandbox-base/package-lock.json /tmp/ai-tools/
@@ -146,6 +159,13 @@ RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
     # (non-login shells) also render the banner.
     printf '\n# Tektona login banner\n[ -f /etc/tektona-motd.sh ] && . /etc/tektona-motd.sh\n' \
         >> /etc/bash.bashrc
+
+# Refresh /etc/ld.so.cache at build time so ldconfig.service short-circuits at
+# boot: it only runs when the cache is stale relative to the library dirs
+# (ConditionNeedsUpdate), so writing it here as the last /etc change makes the
+# boot-time unit a no-op. Must stay near the end — any later step that writes
+# under /etc/ can re-stale the condition.
+RUN ldconfig
 
 USER root
 WORKDIR /home/tektona

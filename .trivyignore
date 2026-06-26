@@ -1,4 +1,9 @@
-# JetBrains Toolbox bundled dependencies (cannot update independently)
+# JetBrains Toolbox bundled dependencies.
+# JetBrains Toolbox has been REMOVED from sandbox-base in this PR, but the
+# desktop-x11 PR build still inherits sandbox-base:latest (PRs don't push the
+# new base to GHCR — see build.yaml), and :latest still ships JetBrains. Keep
+# these waivers until this merges and :latest rolls forward to the JetBrains-free
+# base; then they become no-ops and can be pruned (same pattern as the yq block).
 CVE-2026-33870  # netty-codec-http: request smuggling (bundled in toolbox.jar)
 CVE-2022-41404  # ini4j: DoS (bundled in ini4j-0.5.4.jar)
 CVE-2026-42583  # netty-codec-compression: Lz4FrameDecoder resource exhaustion (bundled in toolbox.jar)
@@ -46,3 +51,50 @@ GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awa
 CVE-2026-39983       # basic-ftp: command injection via CRLF in file paths — bundled transitive dep
 CVE-2026-41324       # basic-ftp: DoS via unbounded memory — bundled transitive dep, fixed in 5.3.0
 CVE-2026-44240       # basic-ftp: malicious FTP server triggers client-side issue — bundled transitive dep, fixed in 5.3.1
+
+# --- Newly published CVEs in the same bundled tooling (added 2026-06-26).
+#     Still unfixable independently; under opt/jetbrains-toolbox/* and
+#     usr/lib/code-server/node_modules/*. Prune on the next tool bump.
+CVE-2026-12151
+CVE-2026-25680
+CVE-2026-25681
+CVE-2026-27136
+CVE-2026-27145
+CVE-2026-33811
+CVE-2026-33814
+CVE-2026-39820
+CVE-2026-39821
+CVE-2026-39836
+CVE-2026-42499
+CVE-2026-42502
+CVE-2026-42504
+CVE-2026-42506
+CVE-2026-44249
+CVE-2026-45033
+CVE-2026-45416
+CVE-2026-48779
+CVE-2026-50010
+CVE-2026-54512
+CVE-2026-54513
+CVE-2026-6734
+CVE-2026-9277
+CVE-2026-9697
+
+# --- TRANSITIONAL: desktop-x11 PR build inherits sandbox-base:latest, which
+#     predates recent Ubuntu security updates (openssl 3.0.13-0ubuntu3.11,
+#     rsync, linux-libc-dev). The freshly-built sandbox-base in THIS PR already
+#     has them patched (build-base passes). These resolve once :latest rolls
+#     forward to this PR's base — prune then. (Same pattern as the yq block.)
+CVE-2026-22984
+CVE-2026-23172
+CVE-2026-29518
+CVE-2026-31431
+CVE-2026-43284
+CVE-2026-43500
+CVE-2026-43618
+CVE-2026-45447
+CVE-2026-46300
+CVE-2026-46323
+CVE-2026-46333
+CVE-2026-47331
+CVE-2026-47333
