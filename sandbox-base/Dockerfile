@@ -129,12 +129,13 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     dpkg -i /tmp/code-server.deb && \
     rm /tmp/code-server.deb
 
-# AI coding CLIs (claude-code, codex, opencode) — locked via package.json
-COPY sandbox-base/package.json sandbox-base/package-lock.json /tmp/ai-tools/
-RUN cd /tmp/ai-tools && npm install --global-style && \
-    ln -s /tmp/ai-tools/node_modules/.bin/claude /usr/local/bin/claude && \
-    ln -s /tmp/ai-tools/node_modules/.bin/codex /usr/local/bin/codex && \
-    ln -s /tmp/ai-tools/node_modules/.bin/opencode /usr/local/bin/opencode
+# AI coding CLIs (claude-code, codex, opencode) — installed globally so npm
+# owns the /usr/local/bin symlinks. Unpinned: each build picks up the latest
+# stable release, which is what users expect.
+RUN npm install -g \
+    @anthropic-ai/claude-code \
+    @openai/codex \
+    opencode-ai
 
 # yq (pinned binary with integrity check)
 ARG YQ_VERSION=4.53.2
