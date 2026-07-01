@@ -13,9 +13,7 @@ Container images for [Tektona](https://github.com/tektona-ai/tektona) sandbox VM
 
 ```
 sandbox-base/          Ubuntu 24.04 base image (all sandboxes inherit from this)
-  ├── Dockerfile
-  ├── package.json     AI CLI tools (claude-code, codex, opencode) — locked deps
-  └── Taskfile.yaml
+  └── Dockerfile
 desktop-x11/           X11 desktop layer (extends sandbox-base)
   ├── Dockerfile
   ├── desktop-bg.png
@@ -24,13 +22,7 @@ desktop-x11/           X11 desktop layer (extends sandbox-base)
 
 `desktop-x11` builds on top of `sandbox-base` via the `BASE_IMAGE` build arg.
 
-## Updating AI CLI tools
-
-```sh
-task update-deps
-```
-
-This updates `@anthropic-ai/claude-code`, `@openai/codex`, and `opencode-ai` to latest and regenerates the lockfile.
+The AI CLI tools (`@anthropic-ai/claude-code`, `@openai/codex`, `opencode-ai`) are installed globally and unpinned — each build picks up their latest stable release.
 
 ## Building locally
 
