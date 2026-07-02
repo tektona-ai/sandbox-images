@@ -175,12 +175,15 @@ RUN ldconfig
 
 # ubuntu:24.04 ships /usr/sbin/policy-rc.d exiting 101, which blocks
 # `apt install <daemon>` from starting the service (container convention).
-# Our images boot as real systemd VMs, so drop it to restore normal
-# install-starts-the-service behavior. Kept until here so this file's own
-# apt steps still build daemon-free; derived images (desktop-x11) build
-# without it, which is safe — maintainer scripts skip service starts when
-# systemd isn't booted (no /run/systemd/system in a build container).
-RUN rm -f /usr/sbin/policy-rc.d
+# Our images boot as real systemd VMs, so allow all actions (exit 0) to
+# restore normal install-starts-the-service behavior. Overwritten rather
+# than removed: a cross-layer rm needs an OCI whiteout, which not every
+# rootfs converter honors, while an overwrite is plain layer content.
+# Kept until here so this file's own apt steps still build daemon-free;
+# derived images (desktop-x11) build with exit 0, which is safe —
+# maintainer scripts skip service starts when systemd isn't booted
+# (no /run/systemd/system in a build container).
+RUN printf '#!/bin/sh\nexit 0\n' > /usr/sbin/policy-rc.d && chmod 755 /usr/sbin/policy-rc.d
 
 USER root
 WORKDIR /home/tektona
