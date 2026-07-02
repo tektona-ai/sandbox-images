@@ -22,8 +22,9 @@ LABEL org.opencontainers.image.licenses="MIT"
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# System packages
-RUN apt-get update && apt-get install -y \
+# System packages. dist-upgrade first: the FROM digest is pinned, so base
+# packages only pick up Ubuntu security updates when this layer rebuilds.
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     build-essential \
     bzip2 \
     ca-certificates \
@@ -128,6 +129,10 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
     dpkg -i /tmp/code-server.deb && \
     rm /tmp/code-server.deb
+
+# The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
+# CVE-2026-48815; npm 11 bundles sigstore 4.x.
+RUN npm install -g npm@11
 
 # AI coding CLIs (claude-code, codex, opencode) — installed globally so npm
 # owns the /usr/local/bin symlinks. Unpinned: each build picks up the latest
