@@ -168,6 +168,15 @@ RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
 # under /etc/ can re-stale the condition.
 RUN ldconfig
 
+# ubuntu:24.04 ships /usr/sbin/policy-rc.d exiting 101, which blocks
+# `apt install <daemon>` from starting the service (container convention).
+# Our images boot as real systemd VMs, so drop it to restore normal
+# install-starts-the-service behavior. Kept until here so this file's own
+# apt steps still build daemon-free; derived images (desktop-x11) build
+# without it, which is safe — maintainer scripts skip service starts when
+# systemd isn't booted (no /run/systemd/system in a build container).
+RUN rm -f /usr/sbin/policy-rc.d
+
 USER root
 WORKDIR /home/tektona
 
