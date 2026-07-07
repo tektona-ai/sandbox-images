@@ -130,6 +130,14 @@ RUN curl -fsSL -o /tmp/code-server.deb \
     dpkg -i /tmp/code-server.deb && \
     rm /tmp/code-server.deb
 
+# Tektona Processes extension (built from tektona repo vscode-extension/),
+# pre-installed into the extensions dir `tektona sandbox vscode` launches
+# code-server with. It shows the sandbox's managed processes as terminal tabs.
+COPY sandbox-base/tektona-processes-0.2.0.vsix /tmp/tektona-processes.vsix
+RUN code-server --install-extension /tmp/tektona-processes.vsix \
+      --extensions-dir /opt/tektona/code-server/extensions && \
+    rm /tmp/tektona-processes.vsix
+
 # The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
 # CVE-2026-48815; npm 11 bundles sigstore 4.x.
 RUN npm install -g npm@11
