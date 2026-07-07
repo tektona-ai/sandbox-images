@@ -6,7 +6,7 @@ Container images for [Tektona](https://github.com/tektona-ai/tektona) sandbox VM
 
 | Image | Description | Pull |
 |-------|-------------|------|
-| **sandbox-base** | Ubuntu 24.04 base with dev tools, Node.js, code-server, AI coding CLIs | `ghcr.io/tektona-ai/sandbox-base:latest` |
+| **sandbox-base** | Ubuntu 24.04 base with dev tools, Node.js, code-server (+ Tektona extension), AI coding CLIs | `ghcr.io/tektona-ai/sandbox-base:latest` |
 | **desktop-x11** | X11 desktop environment with Chrome, LibreOffice, and desktop apps for AI computer-use | `ghcr.io/tektona-ai/desktop-x11:latest` |
 
 ## Structure
