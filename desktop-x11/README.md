@@ -19,6 +19,15 @@ device nodes, writes `/etc/X11/xorg.conf` for `/dev/dri/card0` and
 `/dev/input/event1|2`, starts Xorg on `:0`, waits for the socket, and applies
 the resolution with `xrandr`.
 
+Sessions run as `tektona` (uid 1000), and an X server has to open a virtual
+console, which that user cannot do. This image therefore ships an
+`/etc/X11/Xwrapper.config` with `allowed_users=anybody` and
+`needs_root_rights=yes`, so Ubuntu's setuid `/usr/lib/xorg/Xorg.wrap` will
+start the server for a user who is not on a console. **The platform has to
+invoke `Xorg.wrap`** — the plain `/usr/lib/xorg/Xorg` next to it carries no
+setuid bit, and starting it as uid 1000 fails with
+`xf86OpenConsole: Cannot open virtual console 1`.
+
 **This image owns the session.** It declares one by shipping an executable at
 `/etc/tektona/desktop-session` — the presence of that file is the capability
 check. The platform runs it as the session user with `DISPLAY=:0` and `HOME`

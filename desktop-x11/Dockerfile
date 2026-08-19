@@ -95,6 +95,24 @@ COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 COPY desktop-session /etc/tektona/desktop-session
 RUN chmod +x /etc/tektona/desktop-session
 
+# Let the session user start the X server.
+#
+# Sessions run as `tektona` (uid 1000), and an X server has to open a virtual
+# console — which uid 1000 cannot do. Ubuntu's answer is the setuid wrapper:
+# /usr/lib/xorg/Xorg is a plain binary, and /usr/lib/xorg/Xorg.wrap beside it
+# is setuid root and does the privileged part. The wrapper refuses to run for
+# anyone but a user already on a console, and this VM has nobody on one, so
+# without this file the server dies with:
+#
+#   (EE) xf86OpenConsole: Cannot open virtual console 1 (Permission denied)
+#
+# needs_root_rights=yes keeps the server itself privileged, which also puts its
+# log in /var/log rather than under the session user's $HOME.
+#
+# The platform must invoke Xorg.wrap rather than Xorg for this to apply; the
+# plain binary carries no setuid bit and this file does not change that.
+RUN printf 'allowed_users=anybody\nneeds_root_rights=yes\n' > /etc/X11/Xwrapper.config
+
 # Chrome wrapper: adds --no-sandbox when running as root, plus VM-friendly flags.
 # --test-type suppresses the "unsupported command-line flag: --no-sandbox" infobar.
 RUN printf '#!/bin/bash\nARGS=(--no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage)\nif [ "$(id -u)" -eq 0 ]; then\n  ARGS+=(--no-sandbox --test-type)\nfi\nexec /opt/google/chrome/chrome "${ARGS[@]}" "$@"\n' \
