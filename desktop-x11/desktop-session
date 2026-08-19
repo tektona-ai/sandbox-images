@@ -1,0 +1,109 @@
+#!/bin/sh
+# /etc/tektona/desktop-session — the desktop session this image provides.
+#
+# The desktop is split in two halves. The platform owns the display: it settles
+# udev, hands over the virtio device nodes, writes /etc/X11/xorg.conf, starts
+# Xorg on :0 and applies the resolution with xrandr. The image owns the session
+# — window manager, dock, wallpaper — and declares that it has one by shipping
+# this file. An executable at /etc/tektona/desktop-session *is* the capability
+# check: the platform runs it as the session user, with DISPLAY and HOME
+# already exported, once the X server accepts connections.
+#
+# It lives under /etc/tektona, not in a bin directory, because it is a
+# declaration the image makes rather than a command anyone types: it needs no
+# place on PATH, and it stays clear of the directories an image built on top of
+# this one uses for its own tools.
+#
+# Two rules follow from that split:
+#
+#   * Nothing here touches the display itself. No X server, no /etc/X11, no
+#     removing /tmp/.X0-lock or /tmp/.X11-unix/X0 — the other half has already
+#     done all of it, and a session that is not root's could not do it anyway.
+#
+#   * This script stays in the foreground for as long as the session lasts.
+#     The desktop is stopped by killing this process and the X server, so
+#     returning early would leave openbox and plank behind with nothing
+#     supervising them.
+#
+# Every step is best-effort: a missing wallpaper or dock is worth less than a
+# session that comes up at all, so no single failure aborts the script.
+
+set -u
+
+# Where this session's configuration lives. Resolved once, so the seeding below
+# and the programs it feeds agree on one directory, and left alone when the
+# platform has already chosen one.
+if [ -n "${HOME:-}" ]; then
+    XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+    export XDG_CONFIG_HOME
+fi
+
+# Seed the desktop configuration from /etc/skel.
+#
+# The image builds the dock, the openbox theme and menu, the file manager's
+# wallpaper and the terminal's font into /etc/skel — but /etc/skel is only
+# copied into a home directory at the moment that directory is created, and
+# neither home in this image gets it. /root is older than the image. So is
+# /home/tektona: the base image creates it with `useradd -m`, layers before
+# these files are written. The configuration therefore has to be placed here,
+# by the session that needs it.
+#
+# Copied one top-level entry at a time and only when the destination does not
+# exist, so a session that already has configuration — the user's own, or the
+# copy an earlier session seeded and the user has since changed — keeps it.
+# The session never rewrites what it finds.
+seed_config() {
+    [ -n "${XDG_CONFIG_HOME:-}" ] || return 0
+    [ -d /etc/skel/.config ] || return 0
+    mkdir -p "$XDG_CONFIG_HOME" 2>/dev/null || return 0
+
+    for src in /etc/skel/.config/*; do
+        [ -e "$src" ] || continue # nothing to copy: the glob stayed literal
+        dest="$XDG_CONFIG_HOME/${src##*/}"
+        [ -e "$dest" ] || cp -a "$src" "$dest" 2>/dev/null || true
+    done
+}
+
+# Wait for the window manager to own the root window, so the wallpaper is not
+# painted before openbox is there to keep it. Bounded at ~3s: the desktop is
+# worth more than the wallpaper.
+wait_for_wm() {
+    command -v xprop >/dev/null 2>&1 || {
+        sleep 1
+        return 0
+    }
+    i=0
+    while [ "$i" -lt 30 ]; do
+        if xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q 'window id'; then
+            return 0
+        fi
+        i=$((i + 1))
+        sleep 0.1
+    done
+}
+
+seed_config
+
+# The window manager. Backgrounded rather than exec'd because the dock belongs
+# to this session too, and the `wait` at the end holds both. Called by name so
+# a downstream image can place its own openbox wrapper earlier in PATH.
+openbox &
+
+wait_for_wm
+hsetroot -fill /usr/share/backgrounds/tektona-desktop.png 2>/dev/null ||
+    hsetroot -solid '#1a1a2e' 2>/dev/null
+
+# A session bus for the dock and for whatever is launched from it — unless the
+# session already has one, in which case a second bus would only leave its
+# clients talking past each other.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && command -v dbus-launch >/dev/null 2>&1; then
+    eval "$(dbus-launch --sh-syntax)" 2>/dev/null || true
+fi
+
+plank &
+
+# The screen must never blank: the display is watched over VNC, and there is
+# nobody at a keyboard to wake it back up.
+xset s off s noblank s noexpose -dpms 2>/dev/null || true
+
+wait

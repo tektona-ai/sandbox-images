@@ -83,6 +83,18 @@ RUN for unit in \
 # Desktop wallpaper
 COPY desktop-bg.png /usr/share/backgrounds/tektona-desktop.png
 
+# Desktop session — this image's half of the desktop contract. The platform
+# owns the display (device nodes, /etc/X11/xorg.conf, Xorg on :0, resolution)
+# and then runs this as the session user to bring up openbox, the wallpaper and
+# the dock. Shipping the file is what declares the capability: an executable at
+# /etc/tektona/desktop-session is how the platform decides whether this image
+# has a desktop at all. It is a declaration, not a command anyone types, so it
+# stays out of the bin directories an image layered on top of this one uses for
+# its own tools. Kept ahead of the `RUN ldconfig` below, which must stay the
+# last write to /etc.
+COPY desktop-session /etc/tektona/desktop-session
+RUN chmod +x /etc/tektona/desktop-session
+
 # Chrome wrapper: adds --no-sandbox when running as root, plus VM-friendly flags.
 # --test-type suppresses the "unsupported command-line flag: --no-sandbox" infobar.
 RUN printf '#!/bin/bash\nARGS=(--no-first-run --no-default-browser-check --disable-sync --password-store=basic --disable-features=TranslateUI --disable-gpu --disable-dev-shm-usage)\nif [ "$(id -u)" -eq 0 ]; then\n  ARGS+=(--no-sandbox --test-type)\nfi\nexec /opt/google/chrome/chrome "${ARGS[@]}" "$@"\n' \
