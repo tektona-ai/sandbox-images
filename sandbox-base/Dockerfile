@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ----- tektona-motd build stage -----
-FROM golang:1.25-bookworm@sha256:29e59af995c51a5bf63d072eca973b918e0e7af4db0e4667aa73f1b8da1a6d8c AS motd-build
+FROM golang:1.25-bookworm@sha256:e401dae1bf814e29204a8cb7915682e1780951e609ca0dd8865ee1937f510c48 AS motd-build
 WORKDIR /src
 COPY tektona-motd/go.mod tektona-motd/go.sum ./
 RUN go mod download
@@ -143,8 +143,8 @@ RUN npm install -g \
     opencode-ai
 
 # yq (pinned binary with integrity check)
-ARG YQ_VERSION=4.53.2
-ARG YQ_SHA256=d56bf5c6819e8e696340c312bd70f849dc1678a7cda9c2ad63eebd906371d56b
+ARG YQ_VERSION=4.53.4
+ARG YQ_SHA256=f67d8a6a2dc2308c961f83d5ba8707fd4c7c44ad77902fef87eb3a4646cdfa2a
 RUN curl -fsSL -o /tmp/yq \
     "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" && \
     echo "${YQ_SHA256}  /tmp/yq" | sha256sum -c - && \
