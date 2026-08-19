@@ -98,3 +98,22 @@ CVE-2026-46323
 CVE-2026-46333
 CVE-2026-47331
 CVE-2026-47333
+
+# --- Newly published CVEs in bundled Node.js dependencies (added 2026-08-19).
+#     Reported under the Node.js (node-pkg) target: usr/lib/code-server's
+#     vendored node_modules and the globally installed AI CLIs. Neither ships a
+#     lockfile we control — code-server vendors node_modules inside the .deb,
+#     and the CLIs are installed from their own published tarballs — so these
+#     cannot be bumped independently of the tool that carries them.
+#     Prune on the next code-server bump: the pin is 19 releases behind
+#     (4.114.1 vs 4.133.0), and that bump is tracked as its own change.
+CVE-2026-13311  # shell-quote: fixed in 1.9.0 (installed 1.8.3)
+CVE-2026-13697  # undici: info disclosure + DoS via malformed Cache-Control, fixed in 7.29.0 (installed 7.24.4)
+CVE-2026-14257  # brace-expansion: DoS, fixed in 5.0.8 (installed 5.0.7)
+CVE-2026-59869  # js-yaml: fixed in 4.3.0 (installed 4.1.1)
+CVE-2026-59870  # js-yaml: fixed in 4.3.0 (installed 4.1.1)
+# Trivy reports this one under its GHSA id, not the CVE id above, and the file
+# matches on the exact identifier — so the CVE line alone does not suppress it.
+GHSA-5p4m-2wfm-xmqj  # js-yaml: quadratic CPU in !!omap resolution (= CVE-2026-59870), fixed in 4.3.1
+CVE-2026-69152  # brace-expansion: filter bypass, fixed in 5.0.9 (installed 5.0.7)
+CVE-2026-69192  # ip-address: fixed in 10.3.1 (installed 10.1.0)
