@@ -107,10 +107,27 @@ RUN for unit in \
         ln -sf /dev/null "/etc/systemd/system/$unit"; \
     done
 
-# User setup — sandbox processes run as root inside the runtime, but
-# /home/tektona is the user-facing home directory.
-RUN useradd -m -s /bin/bash tektona \
-    && echo "tektona ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tektona
+# Session user. Every way into the sandbox — an SSH session, a remote command,
+# `tektona sandbox cp`, the desktop — runs as the image USER, and $HOME follows
+# that user's passwd entry. Declaring `USER tektona` (at the end of this file)
+# against a matching WORKDIR is what keeps the start directory and $HOME the
+# same directory. When they differ, a tool that creates a path with `~` and then
+# writes to a path relative to the session uses two different places; editors
+# that upload a server component do exactly that and fail with
+# "No such file or directory".
+#
+# noble ships a stock `ubuntu` account already holding uid 1000, so it goes
+# first — otherwise useradd lands tektona on 1001 and `--user 1000` names
+# somebody else.
+#
+# NOPASSWD sudo is load-bearing rather than a convenience now that sessions are
+# not root: apt, systemctl and `npm install -g` all need it. 0440 is the mode
+# sudo expects of a sudoers drop-in.
+RUN userdel --remove ubuntu 2>/dev/null || true; \
+    groupdel ubuntu 2>/dev/null || true; \
+    useradd --create-home --shell /bin/bash --uid 1000 --user-group tektona \
+    && echo "tektona ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tektona \
+    && chmod 0440 /etc/sudoers.d/tektona
 
 # Node.js 22 LTS (pinned binary with integrity check)
 ARG NODE_VERSION=22.14.0
@@ -182,8 +199,8 @@ RUN ldconfig
 # systemd isn't booted (no /run/systemd/system in a build container).
 RUN rm -f /usr/sbin/policy-rc.d
 
-USER root
 WORKDIR /home/tektona
+USER tektona
 
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's
@@ -191,4 +208,12 @@ WORKDIR /home/tektona
 # spec has no CMD — but ubuntu:24.04 inherits CMD ["bash"] from its parent,
 # which would otherwise mask systemd. Set TEKTONA_PREFER_SYSTEMD=true so the
 # preference branch wins over the hasCmd branch regardless of inheritance.
+#
+# The USER above does not reach this process. An init system is root's job: as
+# a non-root PID 1 it cannot mount cgroups and the boot dies. sandbox-init
+# applies the image USER only to an entrypoint the image itself declared, not
+# to an init it chose on the image's behalf — so systemd runs as root while
+# sessions and the desktop run as tektona. That guard is a platform-side
+# requirement of this image: on a sandbox-init without it, this image does
+# not boot.
 ENV TEKTONA_PREFER_SYSTEMD=true

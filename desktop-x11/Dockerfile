@@ -109,7 +109,10 @@ RUN set -e && \
     mkdir -p /usr/share/icons/default && \
     printf '[Icon Theme]\nInherits=DMZ-Black\n' > /usr/share/icons/default/index.theme && \
     # Plank dock (macOS-style centered bottom dock)
-    # Stored in /etc/skel/ because /home/tektona is initialized dynamically at runtime.
+    # Stored in /etc/skel/, which /etc/tektona/desktop-session seeds into the
+    # session's $HOME. It cannot arrive the usual way: /etc/skel is copied into
+    # a home directory only when that directory is created, and /home/tektona
+    # is created by useradd in sandbox-base, layers before these files exist.
     mkdir -p /etc/skel/.config/plank/dock1/launchers && \
     printf '[PlankDockPreferences]\nHideMode=0\nTheme=Transparent\nPosition=3\nIconSize=48\nDockItems=google-chrome.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem;mousepad.dockitem;gedit.dockitem;galculator.dockitem;libreoffice-writer.dockitem;libreoffice-calc.dockitem\n' \
     > /etc/skel/.config/plank/dock1/settings && \
@@ -215,7 +218,12 @@ RUN set -e && \
 # sandbox-base). Keep this as the last /etc write.
 RUN ldconfig
 
-USER root
+# Hand the image back to the session user. The `USER root` at the top of this
+# file is for the apt layers above; leaving it in place here would override the
+# base image's `USER tektona` and silently give every desktop sandbox a root
+# session with $HOME=/root — the split this repo just closed, reopened one
+# layer further down.
+USER tektona
 
 ENV DISPLAY=:0
 ENV XCURSOR_THEME=DMZ-Black
