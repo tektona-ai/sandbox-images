@@ -65,6 +65,14 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     zstd \
     && rm -rf /var/lib/apt/lists/*
 
+# Point the Ubuntu apt sources at https://. apt checks package signatures either
+# way, but plain HTTP exposes what a sandbox installs, and apt fails when
+# archive.ubuntu.com stops answering on port 80 but still serves port 443.
+# The stock ubuntu:24.04 has no CA bundle, so this has to follow the layer that
+# installs ca-certificates.
+RUN sed -i 's|http://|https://|' /etc/apt/sources.list.d/ubuntu.sources \
+    && ! grep -q 'http://' /etc/apt/sources.list.d/ubuntu.sources
+
 # Mask systemd units that would fight sandbox-init's pre-boot setup.
 # Done as symlinks (not `systemctl mask`) because there's no running systemd
 # inside the build context.
