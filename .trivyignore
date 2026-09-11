@@ -112,6 +112,7 @@ CVE-2026-13697  # undici: info disclosure + DoS via malformed Cache-Control, fix
 CVE-2026-14257  # brace-expansion: DoS, fixed in 5.0.8 (installed 5.0.7)
 CVE-2026-59869  # js-yaml: fixed in 4.3.0 (installed 4.1.1)
 CVE-2026-59870  # js-yaml: fixed in 4.3.0 (installed 4.1.1)
+CVE-2026-84375  # js-yaml: DoS in YAML parsing, fixed in 4.3.2 (installed 4.1.1)
 # Trivy reports this one under its GHSA id, not the CVE id above, and the file
 # matches on the exact identifier — so the CVE line alone does not suppress it.
 GHSA-5p4m-2wfm-xmqj  # js-yaml: quadratic CPU in !!omap resolution (= CVE-2026-59870), fixed in 4.3.1
