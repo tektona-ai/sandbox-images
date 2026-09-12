@@ -118,3 +118,4 @@ CVE-2026-84375  # js-yaml: DoS in YAML parsing, fixed in 4.3.2 (installed 4.1.1)
 GHSA-5p4m-2wfm-xmqj  # js-yaml: quadratic CPU in !!omap resolution (= CVE-2026-59870), fixed in 4.3.1
 CVE-2026-69152  # brace-expansion: filter bypass, fixed in 5.0.9 (installed 5.0.7)
 CVE-2026-69192  # ip-address: fixed in 10.3.1 (installed 10.1.0)
+CVE-2026-73566  # tar: fixed in 7.5.21 (installed 7.5.19)
