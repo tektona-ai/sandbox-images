@@ -37,6 +37,7 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     git-lfs \
     gnupg2 \
     htop \
+    iotop \
     iproute2 \
     iputils-ping \
     jq \
@@ -54,6 +55,7 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     shellcheck \
     strace \
     sudo \
+    sysstat \
     systemd \
     systemd-sysv \
     dbus \
@@ -100,6 +102,7 @@ RUN for unit in \
 # - e2scrub_*: online fsck of an ephemeral, snapshot-backed ext4 rootfs.
 # - motd-news + apt-daily*: package/news upkeep on a throwaway image.
 # - fstrim / dpkg-db-backup: disk maintenance pointless on a disposable VM.
+# - sysstat*: sar history collection. iostat and pidstat do not need it.
 RUN for unit in \
         systemd-timesyncd.service \
         e2scrub_reap.service \
@@ -111,7 +114,10 @@ RUN for unit in \
         apt-daily-upgrade.service \
         apt-daily-upgrade.timer \
         fstrim.timer \
-        dpkg-db-backup.timer; do \
+        dpkg-db-backup.timer \
+        sysstat.service \
+        sysstat-collect.timer \
+        sysstat-summary.timer; do \
         ln -sf /dev/null "/etc/systemd/system/$unit"; \
     done
 
