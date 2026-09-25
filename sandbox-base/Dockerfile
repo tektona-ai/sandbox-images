@@ -114,6 +114,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     man-db \
     manpages \
+    pipx \
     && rm -rf /var/lib/apt/lists/*
 
 # Mask systemd units that would fight sandbox-init's pre-boot setup.
@@ -182,7 +183,8 @@ RUN userdel --remove ubuntu 2>/dev/null || true; \
     groupdel ubuntu 2>/dev/null || true; \
     useradd --create-home --shell /bin/bash --uid 1000 --user-group tektona \
     && echo "tektona ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/tektona \
-    && chmod 0440 /etc/sudoers.d/tektona
+    && chmod 0440 /etc/sudoers.d/tektona \
+    && install -d -o tektona -g tektona /home/tektona/.local /home/tektona/.local/bin
 
 # Node.js 22 LTS (pinned binary with integrity check)
 ARG NODE_VERSION=22.23.3
@@ -247,6 +249,11 @@ RUN rm -f /usr/sbin/policy-rc.d
 
 WORKDIR /home/tektona
 USER tektona
+
+# ~/.local/bin is where `pip install --user` and pipx put CLIs. Ubuntu's
+# ~/.profile adds it only for login shells, so `tektona ssh <id> -- aws` would
+# miss it. sandbox-init hands the image PATH to every session, so set it here.
+ENV PATH=/home/tektona/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's
