@@ -55,6 +55,19 @@ jobs:
           cache-from: type=gha,scope=sandbox-base
           cache-to: type=gha,mode=max,scope=sandbox-base
 
+      - name: Report image size (base)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker pull -q ${{ env.REGISTRY }}/sandbox-base:latest >/dev/null
+          size() { docker image inspect --format '{{.Size}}' "$1" | awk '{printf "%d", $1/1000000}'; }
+          old=$(size ${{ env.REGISTRY }}/sandbox-base:latest)
+          new=$(size ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }})
+          echo "| sandbox-base | size (MB) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| :latest | $old |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| this PR | $new ($((new - old)) MB) |" >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+
       - name: Trivy vulnerability scan (base)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
