@@ -12,6 +12,9 @@ CVE-2026-42587  # netty-codec-http: HttpContentDecompressor maxAllocation bypass
 
 # code-server — version detection false positives and bundled transitive deps
 # we cannot update these independently; they ship inside the code-server deb
+# code-server has been REMOVED from sandbox-base, but the desktop-x11 PR build
+# still scans sandbox-base:latest, which ships it. Prune once :latest rolls
+# forward (same pattern as the JetBrains block above).
 CVE-2023-26114  # code-server version misdetection (<4.10.1 vs actual 4.114.1)
 CVE-2021-3810   # code-server version misdetection
 CVE-2025-47269  # code-server version misdetection

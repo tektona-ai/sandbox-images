@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ----- tektona-motd build stage -----
-FROM golang:1.25-bookworm@sha256:e401dae1bf814e29204a8cb7915682e1780951e609ca0dd8865ee1937f510c48 AS motd-build
+FROM golang:1.27-bookworm@sha256:69a7b9788769bec032d238959b61854e9ae87f57be9029ec04e9885fabf99195 AS motd-build
 WORKDIR /src
 COPY tektona-motd/go.mod tektona-motd/go.sum ./
 RUN go mod download
@@ -13,24 +13,36 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
     -o /out/tektona-motd .
 
 # ----- final image -----
-FROM ubuntu:24.04@sha256:d1e2e92c075e5ca139d51a140fff46f84315c0fdce203eab2807c7e495eff4f9
+FROM ubuntu:26.04@sha256:da6fc2be547864451aa253836dd926da33623312df4a9a243e35dc877c378a78
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
-LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 24.04 with Node.js, code-server, and AI coding CLIs"
+LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 26.04 with Node.js and AI coding CLIs"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# System packages. dist-upgrade first: the FROM digest is pinned, so base
-# packages only pick up Ubuntu security updates when this layer rebuilds.
+# Restore man pages and docs that the Docker image strips, to match a real
+# Ubuntu Server install (the sandbox runs as a VM). Must run before the
+# package installs so those packages keep their docs.
+RUN apt-get update && apt-get install -y unminimize && yes | unminimize \
+    && rm -rf /var/lib/apt/lists/*
+
+# Core system packages. Rarely changes; add new packages to the extras layer
+# below so this layer's cache survives. dist-upgrade first: the FROM digest is
+# pinned, so base packages only pick up Ubuntu security updates when this layer
+# rebuilds.
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
+    7zip \
+    bash-completion \
+    bc \
+    bind9-dnsutils \
     build-essential \
     bzip2 \
     ca-certificates \
     cmake \
+    cron \
     curl \
-    dnsutils \
     e2fsprogs \
     file \
     git \
@@ -41,18 +53,27 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     iproute2 \
     iputils-ping \
     jq \
+    kmod \
     less \
+    locales \
+    logrotate \
+    lsb-release \
     lsof \
+    mtr-tiny \
     nano \
     net-tools \
+    netcat-openbsd \
     openssh-client \
-    p7zip-full \
     patch \
+    pciutils \
     pkg-config \
+    procps \
+    psmisc \
     python3 \
     python3-pip \
     rsync \
     shellcheck \
+    software-properties-common \
     strace \
     sudo \
     sysstat \
@@ -60,20 +81,39 @@ RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y \
     systemd-sysv \
     dbus \
     libpam-systemd \
+    tcpdump \
+    telnet \
+    time \
+    traceroute \
     tree \
+    tzdata \
     unzip \
+    usbutils \
+    vim \
     wget \
     xz-utils \
+    zip \
     zstd \
+    && locale-gen en_US.UTF-8 de_DE.UTF-8 es_ES.UTF-8 fr_FR.UTF-8 pt_PT.UTF-8 pt_BR.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8
 
 # Point the Ubuntu apt sources at https://. apt checks package signatures either
 # way, but plain HTTP exposes what a sandbox installs, and apt fails when
 # archive.ubuntu.com stops answering on port 80 but still serves port 443.
-# The stock ubuntu:24.04 has no CA bundle, so this has to follow the layer that
+# The stock ubuntu image has no CA bundle, so this has to follow the layer that
 # installs ca-certificates.
 RUN sed -i 's|http://|https://|' /etc/apt/sources.list.d/ubuntu.sources \
     && ! grep -q 'http://' /etc/apt/sources.list.d/ubuntu.sources
+
+# Extra packages. Add new packages here, not to the core layer above, so only
+# this layer rebuilds.
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    man-db \
+    manpages \
+    && rm -rf /var/lib/apt/lists/*
 
 # Mask systemd units that would fight sandbox-init's pre-boot setup.
 # Done as symlinks (not `systemctl mask`) because there's no running systemd
@@ -130,7 +170,7 @@ RUN for unit in \
 # that upload a server component do exactly that and fail with
 # "No such file or directory".
 #
-# noble ships a stock `ubuntu` account already holding uid 1000, so it goes
+# Ubuntu ships a stock `ubuntu` account already holding uid 1000, so it goes
 # first — otherwise useradd lands tektona on 1001 and `--user 1000` names
 # somebody else.
 #
@@ -144,22 +184,13 @@ RUN userdel --remove ubuntu 2>/dev/null || true; \
     && chmod 0440 /etc/sudoers.d/tektona
 
 # Node.js 22 LTS (pinned binary with integrity check)
-ARG NODE_VERSION=22.14.0
-ARG NODE_SHA256=69b09dba5c8dcb05c4e4273a4340db1005abeafe3927efda2bc5b249e80437ec
+ARG NODE_VERSION=22.23.3
+ARG NODE_SHA256=df450af89261115ef9f9e3830c3eeb2cc9213b63c720b1af623cb5dcbe2e02de
 RUN curl -fsSL -o /tmp/node.tar.xz \
     "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" && \
     echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c - && \
     tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 && \
     rm /tmp/node.tar.xz
-
-# code-server (pinned .deb with integrity check)
-ARG CODE_SERVER_VERSION=4.114.1
-ARG CODE_SERVER_SHA256=b3430ea87ac89b3199a1fad61e334922c60ff1cd0b87c1d5dba2ebe07fc38ae0
-RUN curl -fsSL -o /tmp/code-server.deb \
-    "https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server_${CODE_SERVER_VERSION}_amd64.deb" && \
-    echo "${CODE_SERVER_SHA256}  /tmp/code-server.deb" | sha256sum -c - && \
-    dpkg -i /tmp/code-server.deb && \
-    rm /tmp/code-server.deb
 
 # The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
 # CVE-2026-48815; npm 11 bundles sigstore 4.x.
@@ -174,8 +205,8 @@ RUN npm install -g \
     opencode-ai
 
 # yq (pinned binary with integrity check)
-ARG YQ_VERSION=4.53.4
-ARG YQ_SHA256=f67d8a6a2dc2308c961f83d5ba8707fd4c7c44ad77902fef87eb3a4646cdfa2a
+ARG YQ_VERSION=4.53.6
+ARG YQ_SHA256=c5f056448f973ae7d39b5401949648a78f2dc1947d6a8eb65be60d5c504b9385
 RUN curl -fsSL -o /tmp/yq \
     "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" && \
     echo "${YQ_SHA256}  /tmp/yq" | sha256sum -c - && \
@@ -204,7 +235,7 @@ RUN chmod +x /usr/local/bin/tektona-motd /etc/update-motd.d/10-tektona && \
 # under /etc/ can re-stale the condition.
 RUN ldconfig
 
-# ubuntu:24.04 ships /usr/sbin/policy-rc.d exiting 101, which blocks
+# The ubuntu image ships /usr/sbin/policy-rc.d exiting 101, which blocks
 # `apt install <daemon>` from starting the service (container convention).
 # Our images boot as real systemd VMs, so drop it to restore normal
 # install-starts-the-service behavior. Kept until here so this file's own
@@ -219,7 +250,7 @@ USER tektona
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's
 # selectEntrypoint precedence rules). The detection only wins when the OCI
-# spec has no CMD — but ubuntu:24.04 inherits CMD ["bash"] from its parent,
+# spec has no CMD — but ubuntu:26.04 inherits CMD ["bash"] from its parent,
 # which would otherwise mask systemd. Set TEKTONA_PREFER_SYSTEMD=true so the
 # preference branch wins over the hasCmd branch regardless of inheritance.
 #
