@@ -24,8 +24,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Restore man pages and docs that the Docker image strips, to match a real
 # Ubuntu Server install (the sandbox runs as a VM). Must run before the
-# package installs so those packages keep their docs.
-RUN apt-get update && apt-get install -y unminimize && yes | unminimize \
+# package installs so those packages keep their docs. `yes` dies of SIGPIPE
+# once unminimize exits, which pipefail would turn into a failed build.
+RUN apt-get update && apt-get install -y unminimize && (yes || true) | unminimize \
     && rm -rf /var/lib/apt/lists/*
 
 # Core system packages. Rarely changes; add new packages to the extras layer
