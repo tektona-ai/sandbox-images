@@ -114,6 +114,13 @@ CVE-2026-64032
 CVE-2026-64073
 CVE-2026-64115
 
+# --- TRANSITIONAL (added 2026-09-25), same reason: linux-libc-dev
+#     6.8.0-139.139 in sandbox-base:latest (24.04). This PR's base is 26.04 and
+#     passes its own scan. Prune once :latest rolls forward.
+CVE-2025-10263
+CVE-2026-53186
+CVE-2026-64091
+
 # --- Newly published CVEs in bundled Node.js dependencies (added 2026-08-19).
 #     Reported under the Node.js (node-pkg) target: usr/lib/code-server's
 #     vendored node_modules and the globally installed AI CLIs. Neither ships a
