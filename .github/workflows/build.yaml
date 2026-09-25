@@ -57,8 +57,10 @@ jobs:
 
       - name: Report image size (base)
         if: github.event_name == 'pull_request'
+        continue-on-error: true  # informational only
         run: |
-          docker pull -q ${{ env.REGISTRY }}/sandbox-base:latest >/dev/null
+          # Empty DOCKER_CONFIG: pull anonymously; the runner's stored GHCR creds get denied.
+          DOCKER_CONFIG=$(mktemp -d) docker pull -q ${{ env.REGISTRY }}/sandbox-base:latest >/dev/null
           size() { docker image inspect --format '{{.Size}}' "$1" | awk '{printf "%d", $1/1000000}'; }
           old=$(size ${{ env.REGISTRY }}/sandbox-base:latest)
           new=$(size ${{ env.REGISTRY }}/sandbox-base:${{ github.sha }})
