@@ -186,6 +186,11 @@ RUN userdel --remove ubuntu 2>/dev/null || true; \
     && chmod 0440 /etc/sudoers.d/tektona \
     && install -d -o tektona -g tektona /home/tektona/.local /home/tektona/.local/bin
 
+# sandbox-init starts sessions without logind, so no login ever starts the
+# systemd user manager and `systemctl --user` fails. Lingering starts it at
+# boot. This file is what `loginctl enable-linger tektona` writes.
+RUN install -d /var/lib/systemd/linger && touch /var/lib/systemd/linger/tektona
+
 # Node.js 22 LTS (pinned binary with integrity check)
 ARG NODE_VERSION=22.23.3
 ARG NODE_SHA256=df450af89261115ef9f9e3830c3eeb2cc9213b63c720b1af623cb5dcbe2e02de
@@ -254,6 +259,11 @@ USER tektona
 # ~/.profile adds it only for login shells, so `tektona ssh <id> -- aws` would
 # miss it. sandbox-init hands the image PATH to every session, so set it here.
 ENV PATH=/home/tektona/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# The runtime directory of the lingering user manager above. pam_systemd sets
+# this at login, and sandbox-init sessions skip that login. DBUS_SESSION_BUS_ADDRESS
+# stays unset: desktop-session starts its own bus when it is unset.
+ENV XDG_RUNTIME_DIR=/run/user/1000
 
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's
