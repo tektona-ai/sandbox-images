@@ -6,7 +6,7 @@ Container images for [Tektona](https://github.com/tektona-ai/tektona) sandbox VM
 
 | Image | Description | Pull |
 |-------|-------------|------|
-| **sandbox-base** | Ubuntu 26.04 base with dev tools, Node.js, AI coding CLIs | `ghcr.io/tektona-ai/sandbox-base:latest` |
+| **sandbox-base** | Ubuntu 26.04 base with dev tools and Node.js | `ghcr.io/tektona-ai/sandbox-base:latest` |
 | **desktop-x11** | X11 desktop environment with Chrome, LibreOffice, and desktop apps for AI computer-use | `ghcr.io/tektona-ai/desktop-x11:latest` |
 
 ## Structure
@@ -21,8 +21,6 @@ desktop-x11/           X11 desktop layer (extends sandbox-base)
 ```
 
 `desktop-x11` builds on top of `sandbox-base` via the `BASE_IMAGE` build arg.
-
-The AI CLI tools (`@anthropic-ai/claude-code`, `@openai/codex`, `opencode-ai`) are installed globally and unpinned — each build picks up their latest stable release.
 
 ## The session user
 

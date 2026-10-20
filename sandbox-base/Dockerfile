@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ----- tektona-motd build stage -----
-FROM golang:1.27-bookworm@sha256:69a7b9788769bec032d238959b61854e9ae87f57be9029ec04e9885fabf99195 AS motd-build
+FROM golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS motd-build
 WORKDIR /src
 COPY tektona-motd/go.mod tektona-motd/go.sum ./
 RUN go mod download
@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
 FROM ubuntu:26.04@sha256:da6fc2be547864451aa253836dd926da33623312df4a9a243e35dc877c378a78
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
-LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 26.04 with Node.js and AI coding CLIs"
+LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 26.04 with Node.js"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -117,6 +117,12 @@ RUN apt-get update && apt-get install -y \
     pipx \
     && rm -rf /var/lib/apt/lists/*
 
+# pebble is an ACME test server that no tool in this image uses, and its Go
+# binary carries the image's only unfixed Go CVEs. dpkg, unlike apt, refuses
+# to remove a package that something depends on, so a new dependent fails the
+# build instead of disappearing with it.
+RUN if dpkg -s pebble >/dev/null 2>&1; then dpkg --purge pebble; fi
+
 # Mask systemd units that would fight sandbox-init's pre-boot setup.
 # Done as symlinks (not `systemctl mask`) because there's no running systemd
 # inside the build context.
@@ -186,6 +192,11 @@ RUN userdel --remove ubuntu 2>/dev/null || true; \
     && chmod 0440 /etc/sudoers.d/tektona \
     && install -d -o tektona -g tektona /home/tektona/.local /home/tektona/.local/bin
 
+# sandbox-init starts sessions without logind, so no login ever starts the
+# systemd user manager and `systemctl --user` fails. Lingering starts it at
+# boot. This file is what `loginctl enable-linger tektona` writes.
+RUN install -d /var/lib/systemd/linger && touch /var/lib/systemd/linger/tektona
+
 # Node.js 22 LTS (pinned binary with integrity check)
 ARG NODE_VERSION=22.23.3
 ARG NODE_SHA256=df450af89261115ef9f9e3830c3eeb2cc9213b63c720b1af623cb5dcbe2e02de
@@ -198,14 +209,6 @@ RUN curl -fsSL -o /tmp/node.tar.xz \
 # The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
 # CVE-2026-48815; npm 11 bundles sigstore 4.x.
 RUN npm install -g npm@11
-
-# AI coding CLIs (claude-code, codex, opencode) — installed globally so npm
-# owns the /usr/local/bin symlinks. Unpinned: each build picks up the latest
-# stable release, which is what users expect.
-RUN npm install -g \
-    @anthropic-ai/claude-code \
-    @openai/codex \
-    opencode-ai
 
 # yq (pinned binary with integrity check)
 ARG YQ_VERSION=4.53.6
@@ -254,6 +257,11 @@ USER tektona
 # ~/.profile adds it only for login shells, so `tektona ssh <id> -- aws` would
 # miss it. sandbox-init hands the image PATH to every session, so set it here.
 ENV PATH=/home/tektona/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# The runtime directory of the lingering user manager above. pam_systemd sets
+# this at login, and sandbox-init sessions skip that login. DBUS_SESSION_BUS_ADDRESS
+# stays unset: desktop-session starts its own bus when it is unset.
+ENV XDG_RUNTIME_DIR=/run/user/1000
 
 # PID 1 is systemd. sandbox-init detects /sbin/init in the rootfs and execs it
 # in a fresh PID/mount namespace (see internal/services/sandbox-init's

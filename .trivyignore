@@ -49,6 +49,14 @@ CVE-2026-32281  # crypto/x509: DoS (yq Go 1.26.0 in sandbox-base:latest)
 CVE-2026-32283  # crypto/tls: DoS (yq Go 1.26.0 in sandbox-base:latest)
 CVE-2026-33810  # crypto/x509: DNS constraint bypass (yq Go 1.26.0 in sandbox-base:latest)
 
+# yq v4.54.1, the latest release, is built with Go 1.27.1 and x/net v0.59.0.
+# The fixes are in Go 1.27.2 and x/net v0.60.0. Remove these on the next yq
+# release built with them. sandbox-base:latest also carries tektona-motd (Go
+# 1.27.1) and pebble, which this image now fixes and removes.
+CVE-2026-78667  # net/http: DoS via crafted HTTP (yq; fixed in Go 1.27.2)
+CVE-2026-78669  # x/net/http2 (yq; fixed in x/net v0.60.0 and Go 1.27.2)
+CVE-2026-97031  # crypto/tls: DoS via ECH outer extensions (yq; fixed in Go 1.27.2)
+
 # AI CLI bundled transitive dependencies (shipped inside claude/codex/opencode)
 GHSA-6v7q-wjvx-w8wg  # basic-ftp: CRLF injection — bundled transitive dep, awaiting upstream CLI release
 CVE-2026-39983       # basic-ftp: command injection via CRLF in file paths — bundled transitive dep
