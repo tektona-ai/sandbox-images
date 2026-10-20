@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ----- tektona-motd build stage -----
-FROM golang:1.27-bookworm@sha256:69a7b9788769bec032d238959b61854e9ae87f57be9029ec04e9885fabf99195 AS motd-build
+FROM golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS motd-build
 WORKDIR /src
 COPY tektona-motd/go.mod tektona-motd/go.sum ./
 RUN go mod download
@@ -116,6 +116,12 @@ RUN apt-get update && apt-get install -y \
     manpages \
     pipx \
     && rm -rf /var/lib/apt/lists/*
+
+# pebble is an ACME test server that no tool in this image uses, and its Go
+# binary carries the image's only unfixed Go CVEs. dpkg, unlike apt, refuses
+# to remove a package that something depends on, so a new dependent fails the
+# build instead of disappearing with it.
+RUN if dpkg -s pebble >/dev/null 2>&1; then dpkg --purge pebble; fi
 
 # Mask systemd units that would fight sandbox-init's pre-boot setup.
 # Done as symlinks (not `systemctl mask`) because there's no running systemd
