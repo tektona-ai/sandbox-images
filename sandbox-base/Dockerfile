@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
 FROM ubuntu:26.04@sha256:da6fc2be547864451aa253836dd926da33623312df4a9a243e35dc877c378a78
 
 LABEL org.opencontainers.image.source="https://github.com/tektona-ai/sandbox-images"
-LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 26.04 with Node.js and AI coding CLIs"
+LABEL org.opencontainers.image.description="Tektona sandbox base image — Ubuntu 26.04 with Node.js"
 LABEL org.opencontainers.image.licenses="MIT"
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -209,14 +209,6 @@ RUN curl -fsSL -o /tmp/node.tar.xz \
 # The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
 # CVE-2026-48815; npm 11 bundles sigstore 4.x.
 RUN npm install -g npm@11
-
-# AI coding CLIs (claude-code, codex, opencode) — installed globally so npm
-# owns the /usr/local/bin symlinks. Unpinned: each build picks up the latest
-# stable release, which is what users expect.
-RUN npm install -g \
-    @anthropic-ai/claude-code \
-    @openai/codex \
-    opencode-ai
 
 # yq (pinned binary with integrity check)
 ARG YQ_VERSION=4.53.6
