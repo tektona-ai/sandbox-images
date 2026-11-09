@@ -192,7 +192,7 @@ ARG NODE_SHA256=df450af89261115ef9f9e3830c3eeb2cc9213b63c720b1af623cb5dcbe2e02de
 RUN curl -fsSL -o /tmp/node.tar.xz \
     "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" && \
     echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c - && \
-    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 && \
+    tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 --no-same-owner && \
     rm /tmp/node.tar.xz
 
 # The Node tarball bundles npm 10, whose vendored sigstore 3.x carries
@@ -246,6 +246,14 @@ RUN ldconfig
 # without it, which is safe — maintainer scripts skip service starts when
 # systemd isn't booted (no /run/systemd/system in a build container).
 RUN rm -f /usr/sbin/policy-rc.d
+
+# The platform runs a helper from /usr/local/bin as root, so the session user
+# must not own or be able to write any directory on the path to it.
+RUN for d in / /usr /usr/local /usr/local/bin; do \
+        if [ -L "$d" ] || [ "$(stat -c %u "$d")" != 0 ] || [ $(( 0$(stat -c %a "$d") & 022 )) != 0 ]; then \
+            echo "$d must be a root-owned directory without group or other write: $(stat -c '%U %a %F' "$d")" >&2; exit 1; \
+        fi; \
+    done
 
 WORKDIR /home/tektona
 USER tektona

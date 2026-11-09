@@ -236,6 +236,14 @@ RUN set -e && \
 # sandbox-base). Keep this as the last /etc write.
 RUN ldconfig
 
+# The platform runs a helper from /usr/local/bin as root, so the session user
+# must not own or be able to write any directory on the path to it.
+RUN for d in / /usr /usr/local /usr/local/bin; do \
+        if [ -L "$d" ] || [ "$(stat -c %u "$d")" != 0 ] || [ $(( 0$(stat -c %a "$d") & 022 )) != 0 ]; then \
+            echo "$d must be a root-owned directory without group or other write: $(stat -c '%U %a %F' "$d")" >&2; exit 1; \
+        fi; \
+    done
+
 # Hand the image back to the session user. The `USER root` at the top of this
 # file is for the apt layers above; leaving it in place here would override the
 # base image's `USER tektona` and silently give every desktop sandbox a root
