@@ -40,6 +40,8 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     libxss1 \
     libxtst6 \
+    # certutil: imports the egress CA into ~/.pki/nssdb for Electron apps and Edge
+    libnss3-tools \
     # Desktop apps for AI computer-use agents
     xfce4-terminal \
     pcmanfm \
